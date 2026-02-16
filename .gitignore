@@ -1,0 +1,3 @@
+downloads/*
+!.gitkeep
+.DS_Store

@@ -1,0 +1,33 @@
+---
+description: Mandatory project conventions for manga-kindle
+alwaysApply: true
+---
+
+# Project Conventions
+
+## Language
+
+- All code, comments, docstrings, commit messages, README, and documentation must be written in **English**.
+- Never use emojis anywhere in the codebase, documentation, or commit messages.
+
+## Python Version
+
+- This project requires Python 3.10+.
+- The `.python-version` file at the project root tells pyenv which version to use.
+- When the minimum Python version changes (e.g. due to new syntax or dependencies), update `.python-version` accordingly.
+
+## README
+
+- `README.md` must accurately reflect the current state of the application.
+- When adding, removing, or changing features, update the README to match:
+  - Feature descriptions
+  - Menu options and CLI flags
+  - Dependencies table (add new ones, remove unused ones)
+  - Configuration table (if defaults change)
+  - Project structure (if files are added or removed)
+- Do not add speculative or planned features to the README. Only document what is implemented.
+
+## Dependencies
+
+- `requirements.txt` must list only packages that are actually imported in the codebase.
+- When adding or removing an import, update `requirements.txt` to match.

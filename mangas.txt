@@ -1,0 +1,20 @@
+# List of manga URLs to monitor (one per line)
+# Lines starting with # are ignored
+https://mangapill.com/manga/9539/kimi-no-kokoro-wo-kanji-tai
+https://mangapill.com/manga/2741/mairimashita-iruma-kun
+https://mangapill.com/manga/8374/tonari-no-seki-no-yatsu-ga-souiu-me-de-mitekuru
+https://mangapill.com/manga/7829/noa-senpai-wa-tomodachi
+https://mangapill.com/manga/8187/ane-no-tomodachi
+https://mangapill.com/manga/8010/tonari-no-neko-to-koi-shirazu
+https://mangapill.com/manga/8882/osoraku-kanojo-wa-ore-no-aniki-wo-neratteru
+https://mangapill.com/manga/7998/kyouran-reijou-nia-liston-byoujaku-reijou-ni-tensei-shita-kamigoroshi-no-bujin-no-karei-naru-musouroku
+https://mangapill.com/manga/4330/tensei-shitara-slime-datta-ken
+https://mangapill.com/manga/9579/shiosai-no-lily
+https://mangapill.com/manga/7467/damedol-to-sekai-ni-hitori-dake-no-fan
+https://mangapill.com/manga/7492/love-comedy-manga-ni-haitteshimatta-node-oshi-no-make-heroine-wo-zenryoku-de-shiawase-ni-suru
+https://mangapill.com/manga/7647/ogami-tsumiki-to-ki-nichijou
+https://mangapill.com/manga/7335/tsuihou-sareru-tabi-ni-skill-wo-te-ni-ireta-ore-ga-100-no-isekai-de-2-shuume-musou
+https://mangapill.com/manga/9569/shitai-katsugi-no-nemu
+https://mangapill.com/manga/7723/mayonaka-heart-tune
+https://mangapill.com/manga/2/one-piece
+https://mangapill.com/manga/5035/sousou-no-frieren

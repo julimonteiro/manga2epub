@@ -1,0 +1,7 @@
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+Pillow>=10.0.0
+cloudscraper>=1.2.71
+rich>=13.0.0
+EbookLib>=0.18
+pyinstaller>=6.0.0
