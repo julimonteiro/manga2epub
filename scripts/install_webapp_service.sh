@@ -38,4 +38,4 @@ PLIST_EOF
 
 launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
 launchctl bootstrap "$DOMAIN" "$PLIST"
-echo "Web app running at http://127.0.0.1:8765 (starts at login, restarts if it crashes)."
+echo "Web app running at http://127.0.0.1:8766 (starts at login, restarts if it crashes)."

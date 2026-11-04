@@ -77,15 +77,9 @@ make webapp-service   # keeps it running in the background, starts at login
 make webapp           # or run it in the foreground
 ```
 
-Opens at `http://127.0.0.1:8765`: a grid with the covers, **+** to add a manga by pasting its mangapill link (all chapters, from a chapter, or only the next ones), and **✕** to remove one. Removing deletes the list entry, the download history, the EPUBs and the Mihon copy in `mihon/local/`.
+Open `http://<mac-name>.local:8766` (or the Mac's local IP) from any device on the same Wi-Fi, then use "Add to Home screen". It is a grid with the covers, **+** to add a manga by pasting its mangapill link (all chapters, from a chapter, or only the next ones), and **✕** to remove one. Removing deletes the list entry, the download history, the EPUBs and the Mihon copy in `mihon/local/`.
 
-The app listens on localhost only and has no login. To reach it from the phone, use Tailscale **Serve** (tailnet only; never Funnel):
-
-```bash
-tailscale serve --bg --https=8765 http://127.0.0.1:8765
-```
-
-Then open `https://<mac-name>.<tailnet>.ts.net:8765` on the phone and choose "Add to Home screen".
+The app has no login, so anyone on the same network can use it. Run `python3 webapp.py --host 127.0.0.1` to keep it on this machine only.
 
 ## Delete chapters after reading in Mihon
 

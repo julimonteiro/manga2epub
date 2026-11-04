@@ -37,7 +37,7 @@ export-mihon: ## Export existing EPUBs as CBZ into mihon/local
 	python3 manga_downloader.py --export-mihon
 
 # ── Web app (manage the list from the phone) ──
-webapp: ## Run the web app in the foreground (http://127.0.0.1:8765)
+webapp: ## Run the web app in the foreground (http://127.0.0.1:8766)
 	python3 webapp.py
 
 webapp-service: ## Keep the web app running in the background (starts at login)

@@ -4,11 +4,11 @@ Manga Kindle — small web app to manage the monitored mangas from the phone.
 
 Lists the mangas with their covers, adds a manga from a mangapill.com link and
 removes one (list entry, download history, EPUBs and the Mihon copy).
-Binds to 127.0.0.1 only; expose it to your own devices with Tailscale
-(`tailscale serve --bg 8765`).
+Listens on the local network (no login), so anyone on the same Wi-Fi can use it.
+Use --host 127.0.0.1 to keep it on this machine only.
 
 Usage:
-    python3 webapp.py [--port 8765]
+    python3 webapp.py [--host 0.0.0.0] [--port 8766]
 """
 
 import argparse
@@ -216,11 +216,12 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     parser = argparse.ArgumentParser(description="Manga Kindle web app")
-    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=8766)
     args = parser.parse_args()
     os.chdir(ROOT)
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"Manga Kindle web app on http://127.0.0.1:{args.port}")
+    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    print(f"Manga Kindle web app on http://{args.host}:{args.port}")
     server.serve_forever()
 
 
