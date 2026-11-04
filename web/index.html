@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -48,33 +48,33 @@ button:disabled { opacity: .5; }
 </style>
 </head>
 <body>
-<header><h1>Meus mangás</h1><span id="status"></span></header>
+<header><h1>My mangas</h1><span id="status"></span></header>
 <main id="grid"></main>
-<button id="fab" aria-label="Adicionar mangá">+</button>
+<button id="fab" aria-label="Add manga">+</button>
 
 <dialog id="addDlg">
-  <h2>Adicionar mangá</h2>
+  <h2>Add manga</h2>
   <input id="urlInput" type="url" inputmode="url" placeholder="https://mangapill.com/manga/…" autocomplete="off">
   <div id="previewBox" hidden>
     <div class="preview"><img id="pvCover" alt=""><div><b id="pvTitle"></b><div class="meta" id="pvMeta"></div></div></div>
-    <label class="opt"><input type="radio" name="mode" value="all" checked><span>Baixar todos os capítulos</span></label>
-    <label class="opt"><input type="radio" name="mode" value="from"><span>A partir do capítulo <input id="fromNum" type="number" min="0" step="any" style="width:90px;padding:6px 8px;margin-left:6px"></span></label>
-    <label class="opt"><input type="radio" name="mode" value="new"><span>Só os próximos<small>não baixa o que já existe</small></span></label>
+    <label class="opt"><input type="radio" name="mode" value="all" checked><span>Download all chapters</span></label>
+    <label class="opt"><input type="radio" name="mode" value="from"><span>Starting from chapter <input id="fromNum" type="number" min="0" step="any" style="width:90px;padding:6px 8px;margin-left:6px"></span></label>
+    <label class="opt"><input type="radio" name="mode" value="new"><span>Only upcoming<small>skips what already exists</small></span></label>
   </div>
   <div class="err" id="addErr"></div>
   <div class="row">
-    <button class="btn" id="addCancel">Cancelar</button>
-    <button class="btn primary" id="addGo">Buscar</button>
+    <button class="btn" id="addCancel">Cancel</button>
+    <button class="btn primary" id="addGo">Search</button>
   </div>
 </dialog>
 
 <dialog id="delDlg">
-  <h2>Remover mangá?</h2>
+  <h2>Remove manga?</h2>
   <p id="delText" style="margin:0"></p>
   <div class="err" id="delErr"></div>
   <div class="row">
-    <button class="btn" id="delCancel">Cancelar</button>
-    <button class="btn danger" id="delGo">Apagar</button>
+    <button class="btn" id="delCancel">Cancel</button>
+    <button class="btn danger" id="delGo">Delete</button>
   </div>
 </dialog>
 <div id="toast"></div>
@@ -88,7 +88,7 @@ async function api(path, body) {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Erro");
+  if (!res.ok) throw new Error(data.error || "Error");
   return data;
 }
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2600); }
@@ -97,31 +97,31 @@ const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">
 async function load() {
   try {
     const { mangas, downloading } = await api("/api/mangas");
-    $("status").textContent = downloading ? "⬇ baixando…" : "";
+    $("status").textContent = downloading ? "⬇ downloading…" : "";
     $("grid").innerHTML = mangas.length ? mangas.map((m) => `
       <article class="card">
         ${m.has_cover ? `<img class="cover" loading="lazy" src="/cover?url=${encodeURIComponent(m.url)}" alt="">` : `<div class="cover"></div>`}
-        <button class="del" data-url="${esc(m.url)}" data-title="${esc(m.title)}" aria-label="Remover">✕</button>
-        <div class="info"><div class="title">${esc(m.title)}</div><div class="meta">${m.chapters} capítulos</div></div>
-      </article>`).join("") : `<div class="empty">Nenhum mangá ainda.<br>Toque no + para adicionar.</div>`;
+        <button class="del" data-url="${esc(m.url)}" data-title="${esc(m.title)}" aria-label="Remove">✕</button>
+        <div class="info"><div class="title">${esc(m.title)}</div><div class="meta">${m.chapters} chapters</div></div>
+      </article>`).join("") : `<div class="empty">No mangas yet.<br>Tap + to add one.</div>`;
   } catch (e) { toast(e.message); }
 }
 
 $("grid").addEventListener("click", (e) => {
   const b = e.target.closest(".del"); if (!b) return;
   target = b.dataset.url;
-  $("delText").textContent = `“${b.dataset.title}” sai da lista, para de ser baixado e os arquivos (EPUBs e a cópia do Mihon) são apagados.`;
+  $("delText").textContent = `“${b.dataset.title}” is removed from the list, stops downloading, and its files (EPUBs and the Mihon copy) are deleted.`;
   $("delErr").textContent = ""; $("delDlg").showModal();
 });
 $("delCancel").onclick = () => $("delDlg").close();
 $("delGo").onclick = async () => {
   $("delGo").disabled = true;
-  try { await api("/api/remove", { url: target }); $("delDlg").close(); toast("Removido"); load(); }
+  try { await api("/api/remove", { url: target }); $("delDlg").close(); toast("Removed"); load(); }
   catch (e) { $("delErr").textContent = e.message; }
   $("delGo").disabled = false;
 };
 
-function resetAdd() { step = "search"; $("urlInput").value = ""; $("previewBox").hidden = true; $("addErr").textContent = ""; $("addGo").textContent = "Buscar"; }
+function resetAdd() { step = "search"; $("urlInput").value = ""; $("previewBox").hidden = true; $("addErr").textContent = ""; $("addGo").textContent = "Search"; }
 $("fab").onclick = () => { resetAdd(); $("addDlg").showModal(); $("urlInput").focus(); };
 $("addCancel").onclick = () => $("addDlg").close();
 $("addGo").onclick = async () => {
@@ -131,18 +131,18 @@ $("addGo").onclick = async () => {
     if (step === "search") {
       const p = await api("/api/preview", { url });
       $("pvCover").src = ""; $("pvTitle").textContent = p.title;
-      $("pvMeta").textContent = `${p.chapters} capítulos` + (p.latest != null ? ` · último ${p.latest}` : "");
+      $("pvMeta").textContent = `${p.chapters} chapters` + (p.latest != null ? ` · latest ${p.latest}` : "");
       $("pvCover").src = `/cover?title=${encodeURIComponent(p.title)}&t=${Date.now()}`;
-      $("previewBox").hidden = false; $("addGo").textContent = "Adicionar"; step = "confirm";
+      $("previewBox").hidden = false; $("addGo").textContent = "Add"; step = "confirm";
     } else {
       const mode = document.querySelector("input[name=mode]:checked").value;
       await api("/api/add", { url, mode, from: $("fromNum").value });
-      $("addDlg").close(); toast(mode === "new" ? "Adicionado" : "Adicionado, baixando…"); load();
+      $("addDlg").close(); toast(mode === "new" ? "Added" : "Added, downloading…"); load();
     }
   } catch (e) { $("addErr").textContent = e.message; }
   $("addGo").disabled = false;
 };
-$("urlInput").addEventListener("input", () => { if (step === "confirm") { step = "search"; $("previewBox").hidden = true; $("addGo").textContent = "Buscar"; } });
+$("urlInput").addEventListener("input", () => { if (step === "confirm") { step = "search"; $("previewBox").hidden = true; $("addGo").textContent = "Search"; } });
 
 load(); setInterval(load, 8000);
 </script>
