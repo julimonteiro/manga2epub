@@ -1,3 +1,6 @@
 downloads/*
 !.gitkeep
 .DS_Store
+logs/
+mihon/
+.run.lock

@@ -19,6 +19,10 @@ import time
 import sys
 import threading
 import argparse
+import fcntl
+import gzip
+import shutil
+import zipfile
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urljoin
@@ -45,6 +49,10 @@ STATE_FILE = "downloaded_chapters.json"
 OUTPUT_DIR = "downloads"
 MAX_RETRIES = 3
 NEW_FOLDER_PREFIX = "[NEW] - "
+MIHON_DIR = os.path.join("mihon", "local")  # synced to the phone's Mihon/local folder
+MIHON_BACKUP_DIR = os.path.join("mihon", "backup")  # Mihon auto-backups, synced from the phone
+RUN_LOCK_FILE = ".run.lock"  # held while a download runs, so jobs and the web app never overlap
+DELETE_READ_CBZ = False  # also delete the phone's CBZ of read chapters (EPUBs are always deleted)
 
 # ── Parallelism and rate limiting control ──
 MAX_CONCURRENT_IMAGES = 4      # images downloading simultaneously per chapter
@@ -288,6 +296,32 @@ def get_scraper():
 # ──────────────────────────────────────────────
 # State management
 # ──────────────────────────────────────────────
+_run_lock_handle = None
+
+
+def acquire_run_lock(block: bool = True) -> bool:
+    """Take the process-wide download lock (kept until the process exits). Returns False if busy and not blocking."""
+    global _run_lock_handle
+    handle = open(RUN_LOCK_FILE, "w")
+    try:
+        fcntl.flock(handle, fcntl.LOCK_EX | (0 if block else fcntl.LOCK_NB))
+    except BlockingIOError:
+        handle.close()
+        return False
+    _run_lock_handle = handle
+    return True
+
+
+def run_lock_busy() -> bool:
+    """True if another process currently holds the download lock."""
+    with open(RUN_LOCK_FILE, "w") as handle:
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return True
+        return False
+
+
 def load_state() -> dict:
     """Load the state of already downloaded chapters."""
     if os.path.exists(STATE_FILE):
@@ -888,6 +922,171 @@ body { margin: 0; padding: 0; }
 
 
 # ──────────────────────────────────────────────
+# Mihon export
+# ──────────────────────────────────────────────
+def epub_to_cbz(epub_path: Path, cbz_path: Path) -> bool:
+    """Repack the page images of a generated EPUB into a CBZ (what Mihon's Local source reads best)."""
+    tmp_path = cbz_path.with_suffix(".cbz.part")
+    try:
+        with zipfile.ZipFile(epub_path) as src:
+            pages = sorted(
+                n for n in src.namelist()
+                if re.search(r"(^|/)images/page_\d+\.jpg$", n)
+            )
+            if not pages:
+                return False
+            with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_STORED) as dst:
+                for i, name in enumerate(pages, start=1):
+                    dst.writestr(f"{i:04d}.jpg", src.read(name))
+        tmp_path.replace(cbz_path)  # atomic, so Syncthing never sees a half-written file
+        return True
+    except (zipfile.BadZipFile, OSError):
+        tmp_path.unlink(missing_ok=True)
+        return False
+
+
+def export_to_mihon() -> int:
+    """
+    Mirror every EPUB under downloads/ as a CBZ under MIHON_DIR/<manga>/ (plus cover.jpg).
+    Existing CBZs are skipped and nothing is ever deleted, so removing EPUBs
+    after sending them to the Kindle does not affect what is on the phone.
+    Returns the number of chapters exported.
+    """
+    downloads_dir = Path(OUTPUT_DIR)
+    if not downloads_dir.exists():
+        return 0
+
+    exported = 0
+    for manga_dir in sorted(downloads_dir.iterdir()):
+        if not manga_dir.is_dir():
+            continue
+        name = manga_dir.name.removeprefix(NEW_FOLDER_PREFIX)
+        target = Path(MIHON_DIR) / name
+
+        for epub_file in sorted(manga_dir.glob("*.epub")):
+            cbz_file = target / f"{epub_file.stem}.cbz"
+            if cbz_file.exists():
+                continue
+            target.mkdir(parents=True, exist_ok=True)
+            if epub_to_cbz(epub_file, cbz_file):
+                exported += 1
+
+        cover = manga_dir / "cover.jpg"
+        if cover.exists() and target.exists() and not (target / "cover.jpg").exists():
+            shutil.copyfile(cover, target / "cover.jpg")
+
+    return exported
+
+
+# ──────────────────────────────────────────────
+# Mihon read-state sync
+# ──────────────────────────────────────────────
+def _pb_read_varint(buf: bytes, pos: int) -> tuple[int, int]:
+    result = shift = 0
+    while True:
+        byte = buf[pos]
+        pos += 1
+        result |= (byte & 0x7F) << shift
+        if not byte & 0x80:
+            return result, pos
+        shift += 7
+
+
+def _pb_fields(buf: bytes):
+    """Yield (field_number, value) for each field of a protobuf message (varint or bytes values)."""
+    pos = 0
+    while pos < len(buf):
+        key, pos = _pb_read_varint(buf, pos)
+        field, wire = key >> 3, key & 7
+        if wire == 0:
+            value, pos = _pb_read_varint(buf, pos)
+        elif wire == 2:
+            length, pos = _pb_read_varint(buf, pos)
+            value, pos = buf[pos:pos + length], pos + length
+        elif wire == 1:
+            value, pos = buf[pos:pos + 8], pos + 8
+        elif wire == 5:
+            value, pos = buf[pos:pos + 4], pos + 4
+        else:
+            raise ValueError(f"unsupported protobuf wire type {wire}")
+        yield field, value
+
+
+def read_chapters_from_backup(backup_path: Path) -> set[str]:
+    """
+    Return the Local-source chapters marked as read in a Mihon backup (.tachibk),
+    as "<manga folder>/<file>" strings (the chapter url Mihon stores for local files).
+    Backup layout: Backup.backupManga=1 -> BackupManga{source=1, chapters=16}
+    -> BackupChapter{url=1, read=4}. The Local source id is 0.
+    """
+    data = backup_path.read_bytes()
+    if data[:2] == b"\x1f\x8b":
+        data = gzip.decompress(data)
+
+    read: set[str] = set()
+    for field, manga_bytes in _pb_fields(data):
+        if field != 1:
+            continue
+        source, chapters = None, []
+        for f, v in _pb_fields(manga_bytes):
+            if f == 1:
+                source = v
+            elif f == 16:
+                chapters.append(v)
+        if source != 0:
+            continue
+        for chapter_bytes in chapters:
+            url, is_read = None, False
+            for f, v in _pb_fields(chapter_bytes):
+                if f == 1:
+                    url = v.decode("utf-8", "replace")
+                elif f == 4:
+                    is_read = bool(v)
+            if url and is_read:
+                read.add(url)
+    return read
+
+
+def delete_read_chapters(dry_run: bool = False) -> int:
+    """
+    Delete the EPUB (and optionally the CBZ) of every chapter that the newest Mihon
+    backup marks as read. Download history is kept, so nothing is downloaded again.
+    Returns the number of chapters cleaned up.
+    """
+    backups = sorted(Path(MIHON_BACKUP_DIR).glob("*.tachibk"), key=lambda p: p.stat().st_mtime)
+    if not backups:
+        return 0
+
+    try:
+        read = read_chapters_from_backup(backups[-1])
+    except (ValueError, OSError, IndexError, EOFError, gzip.BadGzipFile) as e:
+        console.print(f"  [red]Could not read Mihon backup {backups[-1].name}:[/] {e}")
+        return 0
+
+    cleaned = 0
+    for chapter_url in sorted(read):
+        manga_name, _, filename = chapter_url.partition("/")
+        stem = Path(filename).stem
+        if not manga_name or not stem:
+            continue
+        epubs = [
+            Path(OUTPUT_DIR) / d / f"{stem}.epub"
+            for d in (manga_name, f"{NEW_FOLDER_PREFIX}{manga_name}")
+        ]
+        cbz = Path(MIHON_DIR) / manga_name / f"{stem}.cbz"
+        targets = [p for p in epubs if p.exists()]
+        if DELETE_READ_CBZ and cbz.exists():
+            targets.append(cbz)
+        for path in targets:
+            console.print(f"  [dim]{'would delete' if dry_run else 'deleted'}:[/] {path}")
+            if not dry_run:
+                path.unlink()
+        if targets:
+            cleaned += 1
+    return cleaned
+
+
+# ──────────────────────────────────────────────
 # Chapter & manga processing
 # ──────────────────────────────────────────────
 def download_chapter(
@@ -1204,8 +1403,12 @@ def run_download(urls: list[str], download_all: bool = False, start_from: float 
         _cancel_event.set()
         _resume_event.set()
 
+    exported = export_to_mihon()
+
     clear_screen()
     console.print()
+    if exported:
+        console.print(f"  [dim]{exported} chapter(s) exported to {os.path.abspath(MIHON_DIR)}[/]")
     if _cancel_event.is_set():
         console.print(
             Panel.fit(
@@ -1776,7 +1979,44 @@ def main():
         help="Reset download history",
     )
 
+    parser.add_argument(
+        "--only",
+        metavar="URL",
+        help="With --download: only process this manga URL",
+    )
+    parser.add_argument(
+        "--from",
+        dest="from_chapter",
+        type=float,
+        metavar="N",
+        help="With --only: start from this chapter number",
+    )
+    parser.add_argument(
+        "--clean-read",
+        action="store_true",
+        help="Delete EPUBs of chapters marked as read in the newest Mihon backup and exit",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="With --clean-read: only list what would be deleted",
+    )
+    parser.add_argument(
+        "--export-mihon",
+        action="store_true",
+        help=f"Export existing EPUBs as CBZ into {MIHON_DIR} and exit",
+    )
+
     args = parser.parse_args()
+
+    if args.clean_read:
+        n = delete_read_chapters(dry_run=args.dry_run)
+        console.print(f"[green]{n} read chapter(s) {'found' if args.dry_run else 'cleaned up'}.[/]")
+        return
+
+    if args.export_mihon:
+        console.print(f"[green]{export_to_mihon()} chapter(s) exported to {os.path.abspath(MIHON_DIR)}[/]")
+        return
 
     if args.reset:
         if os.path.exists(STATE_FILE):
@@ -1788,7 +2028,12 @@ def main():
             return
 
     if args.download or args.all:
-        run_cli_download(download_all=args.all)
+        acquire_run_lock()
+        delete_read_chapters()
+        if args.only:
+            run_download([args.only], start_from=args.from_chapter)
+        else:
+            run_cli_download(download_all=args.all)
     else:
         interactive_menu()
 

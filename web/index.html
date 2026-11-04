@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Manga Kindle</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg">
+<meta name="theme-color" content="#6d5efc">
+<style>
+:root {
+  --bg: #f6f6fb; --card: #ffffff; --text: #1b1b25; --muted: #6c6c80;
+  --accent: #6d5efc; --danger: #e5484d; --line: #e4e4ee; --shadow: 0 2px 10px rgba(30,30,60,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14141c; --card: #1e1e2a; --text: #f1f1f7; --muted: #9a9ab0; --line: #2d2d3d; --shadow: none; }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 -apple-system, system-ui, sans-serif; padding-bottom: 110px; }
+header { padding: calc(env(safe-area-inset-top) + 20px) 16px 8px; display: flex; align-items: baseline; justify-content: space-between; }
+h1 { margin: 0; font-size: 26px; }
+#status { font-size: 13px; color: var(--accent); }
+#grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; padding: 12px 16px; max-width: 1000px; margin: 0 auto; }
+.card { background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); position: relative; border: 1px solid var(--line); }
+.cover { aspect-ratio: 2 / 3; width: 100%; object-fit: cover; display: block; background: linear-gradient(135deg, #6d5efc55, #e5484d33); }
+.info { padding: 10px 12px 12px; }
+.title { font-weight: 600; font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.8em; }
+.meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.del { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: rgba(0,0,0,.55); color: #fff; font-size: 16px; cursor: pointer; }
+.empty { text-align: center; color: var(--muted); padding: 60px 24px; grid-column: 1 / -1; }
+#fab { position: fixed; right: 20px; bottom: calc(env(safe-area-inset-bottom) + 20px); width: 60px; height: 60px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 34px; line-height: 1; box-shadow: 0 6px 18px rgba(109,94,252,.5); cursor: pointer; }
+dialog { border: 0; border-radius: 20px; padding: 22px; width: min(440px, calc(100vw - 32px)); background: var(--card); color: var(--text); }
+dialog::backdrop { background: rgba(0,0,0,.5); }
+dialog h2 { margin: 0 0 14px; font-size: 20px; }
+input[type=url], input[type=number] { width: 100%; padding: 13px 14px; font-size: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+.row { display: flex; gap: 10px; margin-top: 16px; }
+button.btn { flex: 1; padding: 13px; border-radius: 12px; border: 0; font-size: 16px; font-weight: 600; cursor: pointer; background: var(--line); color: var(--text); }
+button.btn.primary { background: var(--accent); color: #fff; }
+button.btn.danger { background: var(--danger); color: #fff; }
+button:disabled { opacity: .5; }
+.preview { display: flex; gap: 12px; margin: 14px 0; align-items: center; }
+.preview img { width: 64px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; background: var(--line); }
+.opt { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; }
+.opt small { color: var(--muted); display: block; }
+.err { color: var(--danger); font-size: 14px; margin-top: 10px; min-height: 1.2em; }
+#toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header><h1>Meus mangás</h1><span id="status"></span></header>
+<main id="grid"></main>
+<button id="fab" aria-label="Adicionar mangá">+</button>
+
+<dialog id="addDlg">
+  <h2>Adicionar mangá</h2>
+  <input id="urlInput" type="url" inputmode="url" placeholder="https://mangapill.com/manga/…" autocomplete="off">
+  <div id="previewBox" hidden>
+    <div class="preview"><img id="pvCover" alt=""><div><b id="pvTitle"></b><div class="meta" id="pvMeta"></div></div></div>
+    <label class="opt"><input type="radio" name="mode" value="all" checked><span>Baixar todos os capítulos</span></label>
+    <label class="opt"><input type="radio" name="mode" value="from"><span>A partir do capítulo <input id="fromNum" type="number" min="0" step="any" style="width:90px;padding:6px 8px;margin-left:6px"></span></label>
+    <label class="opt"><input type="radio" name="mode" value="new"><span>Só os próximos<small>não baixa o que já existe</small></span></label>
+  </div>
+  <div class="err" id="addErr"></div>
+  <div class="row">
+    <button class="btn" id="addCancel">Cancelar</button>
+    <button class="btn primary" id="addGo">Buscar</button>
+  </div>
+</dialog>
+
+<dialog id="delDlg">
+  <h2>Remover mangá?</h2>
+  <p id="delText" style="margin:0"></p>
+  <div class="err" id="delErr"></div>
+  <div class="row">
+    <button class="btn" id="delCancel">Cancelar</button>
+    <button class="btn danger" id="delGo">Apagar</button>
+  </div>
+</dialog>
+<div id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let step = "search", target = null;
+
+async function api(path, body) {
+  const res = await fetch(path, body === undefined ? {} : {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Erro");
+  return data;
+}
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2600); }
+const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function load() {
+  try {
+    const { mangas, downloading } = await api("/api/mangas");
+    $("status").textContent = downloading ? "⬇ baixando…" : "";
+    $("grid").innerHTML = mangas.length ? mangas.map((m) => `
+      <article class="card">
+        ${m.has_cover ? `<img class="cover" loading="lazy" src="/cover?url=${encodeURIComponent(m.url)}" alt="">` : `<div class="cover"></div>`}
+        <button class="del" data-url="${esc(m.url)}" data-title="${esc(m.title)}" aria-label="Remover">✕</button>
+        <div class="info"><div class="title">${esc(m.title)}</div><div class="meta">${m.chapters} capítulos</div></div>
+      </article>`).join("") : `<div class="empty">Nenhum mangá ainda.<br>Toque no + para adicionar.</div>`;
+  } catch (e) { toast(e.message); }
+}
+
+$("grid").addEventListener("click", (e) => {
+  const b = e.target.closest(".del"); if (!b) return;
+  target = b.dataset.url;
+  $("delText").textContent = `“${b.dataset.title}” sai da lista, para de ser baixado e os arquivos (EPUBs e a cópia do Mihon) são apagados.`;
+  $("delErr").textContent = ""; $("delDlg").showModal();
+});
+$("delCancel").onclick = () => $("delDlg").close();
+$("delGo").onclick = async () => {
+  $("delGo").disabled = true;
+  try { await api("/api/remove", { url: target }); $("delDlg").close(); toast("Removido"); load(); }
+  catch (e) { $("delErr").textContent = e.message; }
+  $("delGo").disabled = false;
+};
+
+function resetAdd() { step = "search"; $("urlInput").value = ""; $("previewBox").hidden = true; $("addErr").textContent = ""; $("addGo").textContent = "Buscar"; }
+$("fab").onclick = () => { resetAdd(); $("addDlg").showModal(); $("urlInput").focus(); };
+$("addCancel").onclick = () => $("addDlg").close();
+$("addGo").onclick = async () => {
+  const url = $("urlInput").value.trim();
+  $("addErr").textContent = ""; $("addGo").disabled = true;
+  try {
+    if (step === "search") {
+      const p = await api("/api/preview", { url });
+      $("pvCover").src = ""; $("pvTitle").textContent = p.title;
+      $("pvMeta").textContent = `${p.chapters} capítulos` + (p.latest != null ? ` · último ${p.latest}` : "");
+      $("pvCover").src = `/cover?title=${encodeURIComponent(p.title)}&t=${Date.now()}`;
+      $("previewBox").hidden = false; $("addGo").textContent = "Adicionar"; step = "confirm";
+    } else {
+      const mode = document.querySelector("input[name=mode]:checked").value;
+      await api("/api/add", { url, mode, from: $("fromNum").value });
+      $("addDlg").close(); toast(mode === "new" ? "Adicionado" : "Adicionado, baixando…"); load();
+    }
+  } catch (e) { $("addErr").textContent = e.message; }
+  $("addGo").disabled = false;
+};
+$("urlInput").addEventListener("input", () => { if (step === "confirm") { step = "search"; $("previewBox").hidden = true; $("addGo").textContent = "Buscar"; } });
+
+load(); setInterval(load, 8000);
+</script>
+</body>
+</html>

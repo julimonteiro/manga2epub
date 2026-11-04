@@ -1,0 +1,9 @@
+{
+  "name": "Manga Kindle",
+  "short_name": "Mangas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#14141c",
+  "theme_color": "#6d5efc",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
