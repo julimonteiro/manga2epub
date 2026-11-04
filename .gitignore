@@ -4,3 +4,8 @@ downloads/*
 logs/
 mihon/
 .run.lock
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/build.log

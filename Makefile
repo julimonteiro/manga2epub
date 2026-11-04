@@ -49,6 +49,11 @@ webapp-service-remove: ## Stop and remove the web app background service
 clean-read: ## Delete EPUBs of chapters Mihon marks as read (DRY=1 to preview)
 	python3 manga_downloader.py --clean-read $(if $(DRY),--dry-run)
 
+# ── Android app (thin WebView around the web app) ──
+apk: ## Build and install the Android APK on the USB-connected phone
+	cd android && JAVA_HOME=$$(/usr/libexec/java_home -v 17) ANDROID_HOME=/opt/homebrew/share/android-commandlinetools ./gradlew assembleDebug
+	adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+
 # ── Build standalone executable ──
 build: ## Build standalone executable (no Python needed to run)
 	@echo "🔨 Building standalone executable..."
