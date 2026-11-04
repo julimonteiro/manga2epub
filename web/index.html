@@ -6,145 +6,252 @@
 <title>Manga Kindle</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg">
-<meta name="theme-color" content="#6d5efc">
+<meta name="theme-color" content="#0f0f17">
 <style>
 :root {
-  --bg: #f6f6fb; --card: #ffffff; --text: #1b1b25; --muted: #6c6c80;
-  --accent: #6d5efc; --danger: #e5484d; --line: #e4e4ee; --shadow: 0 2px 10px rgba(30,30,60,.08);
+  --bg: #f4f4f8; --surface: #ffffff; --surface-2: #ececf3; --text: #14141c; --muted: #70708a;
+  --accent: #7c6cff; --accent-2: #9a8dff; --danger: #e5484d; --line: rgba(20,20,40,.08);
+  --glass: rgba(255,255,255,.72); --shadow: 0 8px 24px rgba(30,30,70,.12);
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #14141c; --card: #1e1e2a; --text: #f1f1f7; --muted: #9a9ab0; --line: #2d2d3d; --shadow: none; }
+  :root {
+    --bg: #0f0f17; --surface: #181824; --surface-2: #232333; --text: #f3f3fa; --muted: #8e8ea8;
+    --line: rgba(255,255,255,.08); --glass: rgba(24,24,36,.72); --shadow: 0 8px 28px rgba(0,0,0,.45);
+  }
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 -apple-system, system-ui, sans-serif; padding-bottom: 110px; }
-header { padding: calc(env(safe-area-inset-top) + 20px) 16px 8px; display: flex; align-items: baseline; justify-content: space-between; }
-h1 { margin: 0; font-size: 26px; }
-#status { font-size: 13px; color: var(--accent); }
-#grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; padding: 12px 16px; max-width: 1000px; margin: 0 auto; }
-.card { background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); position: relative; border: 1px solid var(--line); }
-.cover { aspect-ratio: 2 / 3; width: 100%; object-fit: cover; display: block; background: linear-gradient(135deg, #6d5efc55, #e5484d33); }
-.info { padding: 10px 12px 12px; }
-.title { font-weight: 600; font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.8em; }
-.meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
-.del { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: rgba(0,0,0,.55); color: #fff; font-size: 16px; cursor: pointer; }
-.empty { text-align: center; color: var(--muted); padding: 60px 24px; grid-column: 1 / -1; }
-#fab { position: fixed; right: 20px; bottom: calc(env(safe-area-inset-bottom) + 20px); width: 60px; height: 60px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 34px; line-height: 1; box-shadow: 0 6px 18px rgba(109,94,252,.5); cursor: pointer; }
-dialog { border: 0; border-radius: 20px; padding: 22px; width: min(440px, calc(100vw - 32px)); background: var(--card); color: var(--text); }
-dialog::backdrop { background: rgba(0,0,0,.5); }
-dialog h2 { margin: 0 0 14px; font-size: 20px; }
-input[type=url], input[type=number] { width: 100%; padding: 13px 14px; font-size: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
-.row { display: flex; gap: 10px; margin-top: 16px; }
-button.btn { flex: 1; padding: 13px; border-radius: 12px; border: 0; font-size: 16px; font-weight: 600; cursor: pointer; background: var(--line); color: var(--text); }
-button.btn.primary { background: var(--accent); color: #fff; }
-button.btn.danger { background: var(--danger); color: #fff; }
-button:disabled { opacity: .5; }
-.preview { display: flex; gap: 12px; margin: 14px 0; align-items: center; }
-.preview img { width: 64px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; background: var(--line); }
-.opt { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; }
-.opt small { color: var(--muted); display: block; }
-.err { color: var(--danger); font-size: 14px; margin-top: 10px; min-height: 1.2em; }
-#toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
-#toast.show { opacity: 1; }
+html { background: var(--bg); }
+body { margin: 0; color: var(--text); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+button { font: inherit; color: inherit; cursor: pointer; }
+svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* header */
+header { position: sticky; top: 0; z-index: 5; background: var(--glass); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  padding: calc(env(safe-area-inset-top) + 18px) 18px 12px; border-bottom: 1px solid var(--line); }
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 0 auto; }
+h1 { margin: 0; font-size: 28px; letter-spacing: -.02em; }
+.sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.pill { display: none; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); padding: 6px 11px; border-radius: 99px; margin-top: 4px; white-space: nowrap; }
+.pill.on { display: inline-flex; }
+.pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: .25; transform: scale(.7); } }
+.search { position: relative; display: block; max-width: 1000px; margin: 12px auto 0; }
+.search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); width: 18px; height: 18px; }
+.search input { width: 100%; padding: 11px 14px 11px 40px; border-radius: 12px; border: 0; background: var(--surface-2); color: var(--text); font-size: 15px; outline: none; }
+.search input:focus { box-shadow: 0 0 0 2px var(--accent); }
+
+/* grid */
+#grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px 18px; max-width: 1000px; margin: 0 auto; }
+@media (min-width: 560px) { #grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; } }
+.card { position: relative; border: 0; padding: 0; border-radius: 12px; overflow: hidden; aspect-ratio: 2 / 3; background: var(--surface-2); text-align: left; box-shadow: var(--shadow); transition: transform .15s; }
+.card:active { transform: scale(.96); }
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ph { width: 100%; height: 100%; background: linear-gradient(135deg, var(--accent), #e5484d); opacity: .5; }
+.card .shade { position: absolute; inset: auto 0 0 0; padding: 38px 8px 8px; background: linear-gradient(to top, rgba(0,0,0,.88), transparent); color: #fff; font-size: 12px; font-weight: 600; line-height: 1.25; }
+.card .shade span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.badge { position: absolute; top: 7px; left: 7px; font-size: 11px; font-weight: 700; color: #fff; background: rgba(0,0,0,.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: 3px 8px; border-radius: 99px; }
+.skeleton { aspect-ratio: 2/3; border-radius: 12px; background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface) 50%, var(--surface-2) 70%); background-size: 200% 100%; animation: sh 1.2s infinite; }
+@keyframes sh { to { background-position: -200% 0; } }
+.empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 70px 20px; }
+.empty svg { width: 46px; height: 46px; opacity: .5; margin-bottom: 10px; }
+
+/* add button */
+#fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 22px); z-index: 6; display: flex; align-items: center; gap: 8px;
+  padding: 15px 24px; border: 0; border-radius: 99px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-weight: 700; font-size: 15px; box-shadow: 0 10px 28px rgba(124,108,255,.5); }
+#fab:active { transform: translateX(-50%) scale(.96); }
+
+/* bottom sheets */
+dialog { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 520px; border-radius: 24px 24px 0 0; background: var(--surface); color: var(--text); animation: up .25s ease-out; }
+dialog::backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(2px); }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } }
+.sheet { padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); }
+.grab { width: 38px; height: 4px; border-radius: 4px; background: var(--surface-2); margin: 0 auto 16px; }
+.sheet h2 { margin: 0 0 14px; font-size: 20px; letter-spacing: -.01em; }
+.field { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; border: 0; background: var(--surface-2); color: var(--text); outline: none; }
+.field:focus { box-shadow: 0 0 0 2px var(--accent); }
+.hint { color: var(--muted); font-size: 12.5px; margin: 8px 2px 0; }
+.err { color: var(--danger); font-size: 13.5px; margin-top: 10px; min-height: 1.2em; }
+.btn { width: 100%; padding: 15px; border-radius: 14px; border: 0; font-weight: 700; font-size: 16px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn.ghost { background: var(--surface-2); color: var(--text); }
+.btn.danger { background: transparent; color: var(--danger); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--danger) 55%, transparent); }
+.btn.danger.armed { background: var(--danger); color: #fff; box-shadow: none; }
+.btn:disabled { opacity: .55; }
+.spin { width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: rot .7s linear infinite; display: none; }
+.btn.busy .spin { display: inline-block; }
+@keyframes rot { to { transform: rotate(360deg); } }
+.stack { display: grid; gap: 10px; margin-top: 18px; }
+
+.media { display: flex; gap: 14px; align-items: center; margin-bottom: 4px; }
+.media img, .media .ph { width: 78px; aspect-ratio: 2/3; height: auto; border-radius: 10px; object-fit: cover; background: var(--surface-2); flex: none; box-shadow: var(--shadow); }
+.media b { font-size: 17px; display: block; }
+.media span { color: var(--muted); font-size: 13.5px; }
+
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface-2); border-radius: 12px; padding: 3px; margin-top: 14px; }
+.seg button { border: 0; background: none; padding: 10px 4px; border-radius: 10px; font-size: 13.5px; font-weight: 600; color: var(--muted); }
+.seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+#fromWrap { display: none; margin-top: 10px; }
+#fromWrap.show { display: block; }
+
+#toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 16px); transform: translate(-50%, -20px); background: var(--text); color: var(--bg); padding: 11px 18px; border-radius: 99px; font-size: 14px; font-weight: 600; opacity: 0; transition: .25s; pointer-events: none; z-index: 20; white-space: nowrap; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
 </style>
 </head>
 <body>
-<header><h1>My mangas</h1><span id="status"></span></header>
-<main id="grid"></main>
-<button id="fab" aria-label="Add manga">+</button>
+<header>
+  <div class="top">
+    <div><h1>Library</h1><div class="sub" id="sub">&nbsp;</div></div>
+    <span class="pill" id="pill"><i></i>Downloading</span>
+  </div>
+  <label class="search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Search your mangas" autocomplete="off">
+  </label>
+</header>
 
-<dialog id="addDlg">
+<main id="grid"></main>
+
+<button id="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add manga</button>
+
+<dialog id="addDlg"><div class="sheet">
+  <div class="grab"></div>
   <h2>Add manga</h2>
-  <input id="urlInput" type="url" inputmode="url" placeholder="https://mangapill.com/manga/…" autocomplete="off">
-  <div id="previewBox" hidden>
-    <div class="preview"><img id="pvCover" alt=""><div><b id="pvTitle"></b><div class="meta" id="pvMeta"></div></div></div>
-    <label class="opt"><input type="radio" name="mode" value="all" checked><span>Download all chapters</span></label>
-    <label class="opt"><input type="radio" name="mode" value="from"><span>Starting from chapter <input id="fromNum" type="number" min="0" step="any" style="width:90px;padding:6px 8px;margin-left:6px"></span></label>
-    <label class="opt"><input type="radio" name="mode" value="new"><span>Only upcoming<small>skips what already exists</small></span></label>
+  <div id="stepSearch">
+    <input class="field" id="urlInput" type="url" inputmode="url" placeholder="Paste a mangapill.com link" autocomplete="off">
+    <div class="hint">Example: https://mangapill.com/manga/1234/name</div>
+  </div>
+  <div id="stepConfirm" hidden>
+    <div class="media"><img id="pvCover" alt=""><div><b id="pvTitle"></b><span id="pvMeta"></span></div></div>
+    <div class="seg" id="seg">
+      <button data-mode="all" class="on">All chapters</button>
+      <button data-mode="from">From…</button>
+      <button data-mode="new">Only new</button>
+    </div>
+    <div id="fromWrap"><input class="field" id="fromNum" type="number" min="0" step="any" inputmode="decimal" placeholder="Start from chapter number"></div>
+    <div class="hint" id="modeHint">Downloads everything available.</div>
   </div>
   <div class="err" id="addErr"></div>
-  <div class="row">
-    <button class="btn" id="addCancel">Cancel</button>
-    <button class="btn primary" id="addGo">Search</button>
+  <div class="stack">
+    <button class="btn" id="addGo"><span class="spin"></span><span id="addGoLabel">Search</span></button>
+    <button class="btn ghost" id="addCancel">Cancel</button>
   </div>
-</dialog>
+</div></dialog>
 
-<dialog id="delDlg">
-  <h2>Remove manga?</h2>
-  <p id="delText" style="margin:0"></p>
+<dialog id="detailDlg"><div class="sheet">
+  <div class="grab"></div>
+  <div class="media"><div id="dCoverWrap"></div><div><b id="dTitle"></b><span id="dMeta"></span></div></div>
+  <div class="hint">Removing deletes the list entry, the EPUBs and the Mihon copy.</div>
   <div class="err" id="delErr"></div>
-  <div class="row">
-    <button class="btn" id="delCancel">Cancel</button>
-    <button class="btn danger" id="delGo">Delete</button>
+  <div class="stack">
+    <button class="btn danger" id="delGo"><span class="spin"></span><span id="delLabel">Remove manga</span></button>
+    <button class="btn ghost" id="detailClose">Close</button>
   </div>
-</dialog>
+</div></dialog>
+
 <div id="toast"></div>
 
 <script>
 const $ = (id) => document.getElementById(id);
-let step = "search", target = null;
+const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const BOOK = '<svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 21V5M9 7h6"/></svg>';
+let mangas = [], lastJson = "", current = null, step = "search", mode = "all", armed = false;
 
 async function api(path, body) {
   const res = await fetch(path, body === undefined ? {} : {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Error");
+  if (!res.ok) throw new Error(data.error || "Something went wrong");
   return data;
 }
-function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2600); }
-const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600); }
+function busy(btn, on) { btn.disabled = on; btn.classList.toggle("busy", on); }
+const coverUrl = (m) => `/cover?url=${encodeURIComponent(m.url)}`;
 
-async function load() {
-  try {
-    const { mangas, downloading } = await api("/api/mangas");
-    $("status").textContent = downloading ? "⬇ downloading…" : "";
-    $("grid").innerHTML = mangas.length ? mangas.map((m) => `
-      <article class="card">
-        ${m.has_cover ? `<img class="cover" loading="lazy" src="/cover?url=${encodeURIComponent(m.url)}" alt="">` : `<div class="cover"></div>`}
-        <button class="del" data-url="${esc(m.url)}" data-title="${esc(m.title)}" aria-label="Remove">✕</button>
-        <div class="info"><div class="title">${esc(m.title)}</div><div class="meta">${m.chapters} chapters</div></div>
-      </article>`).join("") : `<div class="empty">No mangas yet.<br>Tap + to add one.</div>`;
-  } catch (e) { toast(e.message); }
+function render() {
+  const q = $("q").value.trim().toLowerCase();
+  const list = mangas.filter((m) => m.title.toLowerCase().includes(q));
+  const total = mangas.reduce((n, m) => n + m.chapters, 0);
+  $("sub").textContent = `${mangas.length} manga${mangas.length === 1 ? "" : "s"} · ${total.toLocaleString()} chapters`;
+  $("grid").innerHTML = list.length ? list.map((m) => `
+    <button class="card" data-url="${esc(m.url)}">
+      ${m.has_cover ? `<img loading="lazy" src="${coverUrl(m)}" alt="">` : `<div class="ph"></div>`}
+      <span class="badge">${m.chapters}</span>
+      <div class="shade"><span>${esc(m.title)}</span></div>
+    </button>`).join("")
+    : `<div class="empty">${BOOK}<div>${mangas.length ? "No match." : "Your library is empty.<br>Tap “Add manga” to start."}</div></div>`;
 }
 
+async function load(first) {
+  if (first) $("grid").innerHTML = Array(9).fill('<div class="skeleton"></div>').join("");
+  try {
+    const data = await api("/api/mangas");
+    $("pill").classList.toggle("on", data.downloading);
+    const json = JSON.stringify(data.mangas);
+    if (json !== lastJson) { lastJson = json; mangas = data.mangas; render(); }
+  } catch (e) { if (first) toast(e.message); }
+}
+
+$("q").addEventListener("input", render);
+
+/* detail / remove */
+function resetDel() { armed = false; $("delGo").classList.remove("armed"); $("delLabel").textContent = "Remove manga"; }
 $("grid").addEventListener("click", (e) => {
-  const b = e.target.closest(".del"); if (!b) return;
-  target = b.dataset.url;
-  $("delText").textContent = `“${b.dataset.title}” is removed from the list, stops downloading, and its files (EPUBs and the Mihon copy) are deleted.`;
-  $("delErr").textContent = ""; $("delDlg").showModal();
+  const card = e.target.closest(".card"); if (!card) return;
+  current = mangas.find((m) => m.url === card.dataset.url); if (!current) return;
+  $("dCoverWrap").innerHTML = current.has_cover ? `<img src="${coverUrl(current)}" alt="">` : '<div class="ph"></div>';
+  $("dTitle").textContent = current.title;
+  $("dMeta").textContent = `${current.chapters} chapters downloaded`;
+  resetDel(); $("delErr").textContent = "";
+  $("detailDlg").showModal();
 });
-$("delCancel").onclick = () => $("delDlg").close();
+$("detailClose").onclick = () => $("detailDlg").close();
 $("delGo").onclick = async () => {
-  $("delGo").disabled = true;
-  try { await api("/api/remove", { url: target }); $("delDlg").close(); toast("Removed"); load(); }
-  catch (e) { $("delErr").textContent = e.message; }
-  $("delGo").disabled = false;
+  if (!armed) {
+    armed = true; $("delGo").classList.add("armed"); $("delLabel").textContent = "Tap again to delete everything";
+    setTimeout(resetDel, 4000);
+    return;
+  }
+  busy($("delGo"), true);
+  try { await api("/api/remove", { url: current.url }); $("detailDlg").close(); toast("Manga removed"); lastJson = ""; load(); }
+  catch (e) { $("delErr").textContent = e.message; resetDel(); }
+  busy($("delGo"), false);
 };
 
-function resetAdd() { step = "search"; $("urlInput").value = ""; $("previewBox").hidden = true; $("addErr").textContent = ""; $("addGo").textContent = "Search"; }
-$("fab").onclick = () => { resetAdd(); $("addDlg").showModal(); $("urlInput").focus(); };
+/* add */
+const HINTS = { all: "Downloads everything available.", from: "Skips chapters before this number.", new: "Ignores what already exists, downloads only future chapters." };
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll("#seg button").forEach((b) => b.classList.toggle("on", b.dataset.mode === m));
+  $("fromWrap").classList.toggle("show", m === "from");
+  $("modeHint").textContent = HINTS[m];
+}
+function resetAdd() {
+  step = "search"; $("urlInput").value = ""; $("fromNum").value = ""; $("addErr").textContent = "";
+  $("stepSearch").hidden = false; $("stepConfirm").hidden = true; $("addGoLabel").textContent = "Search"; setMode("all");
+}
+$("seg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setMode(b.dataset.mode); });
+$("fab").onclick = () => { resetAdd(); $("addDlg").showModal(); setTimeout(() => $("urlInput").focus(), 50); };
 $("addCancel").onclick = () => $("addDlg").close();
+$("urlInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("addGo").click(); });
 $("addGo").onclick = async () => {
   const url = $("urlInput").value.trim();
-  $("addErr").textContent = ""; $("addGo").disabled = true;
+  $("addErr").textContent = ""; busy($("addGo"), true);
   try {
     if (step === "search") {
       const p = await api("/api/preview", { url });
-      $("pvCover").src = ""; $("pvTitle").textContent = p.title;
+      $("pvTitle").textContent = p.title;
       $("pvMeta").textContent = `${p.chapters} chapters` + (p.latest != null ? ` · latest ${p.latest}` : "");
       $("pvCover").src = `/cover?title=${encodeURIComponent(p.title)}&t=${Date.now()}`;
-      $("previewBox").hidden = false; $("addGo").textContent = "Add"; step = "confirm";
+      $("stepSearch").hidden = true; $("stepConfirm").hidden = false; $("addGoLabel").textContent = "Add to library"; step = "confirm";
     } else {
-      const mode = document.querySelector("input[name=mode]:checked").value;
       await api("/api/add", { url, mode, from: $("fromNum").value });
-      $("addDlg").close(); toast(mode === "new" ? "Added" : "Added, downloading…"); load();
+      $("addDlg").close(); toast(mode === "new" ? "Added to library" : "Added, downloading…"); lastJson = ""; load();
     }
   } catch (e) { $("addErr").textContent = e.message; }
-  $("addGo").disabled = false;
+  busy($("addGo"), false);
 };
-$("urlInput").addEventListener("input", () => { if (step === "confirm") { step = "search"; $("previewBox").hidden = true; $("addGo").textContent = "Search"; } });
 
-load(); setInterval(load, 8000);
+load(true); setInterval(load, 8000);
 </script>
 </body>
 </html>
