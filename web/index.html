@@ -6,146 +6,641 @@
 <title>Manga Kindle</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg">
-<meta name="theme-color" content="#0f0f17">
+<meta name="theme-color" content="#111318">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script>try{var t=localStorage.getItem("mk.theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <style>
+/* Material 3 tonal palette (blue seed), same feel as Mihon */
 :root {
-  --bg: #f4f4f8; --surface: #ffffff; --surface-2: #ececf3; --text: #14141c; --muted: #70708a;
-  --accent: #7c6cff; --accent-2: #9a8dff; --danger: #e5484d; --line: rgba(20,20,40,.08);
-  --glass: rgba(255,255,255,.72); --shadow: 0 8px 24px rgba(30,30,70,.12);
+  --bg: #f9f9ff; --on-bg: #191c20;
+  --surface: #f9f9ff; --c-low: #f3f3fa; --c: #ededf4; --c-high: #e7e8ee; --c-highest: #e2e2e9;
+  --on-surface: #191c20; --on-variant: #44474e; --outline: #74777f; --outline-var: #c4c6d0;
+  --primary: #415f91; --on-primary: #ffffff; --primary-c: #d6e3ff; --on-primary-c: #001b3e;
+  --secondary-c: #dae2f9; --on-secondary-c: #131c2b;
+  --tertiary-c: #fbd7fc; --on-tertiary-c: #29132d;
+  --error: #ba1a1a; --on-error: #fff; --error-c: #ffdad6;
+  --scrim: rgba(0,0,0,.5);
+  --r-s: 8px; --r-m: 12px; --r-l: 16px; --r-xl: 28px;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f0f17; --surface: #181824; --surface-2: #232333; --text: #f3f3fa; --muted: #8e8ea8;
-    --line: rgba(255,255,255,.08); --glass: rgba(24,24,36,.72); --shadow: 0 8px 28px rgba(0,0,0,.45);
+  :root:not([data-theme]) {
+    --bg: #111318; --on-bg: #e2e2e9;
+    --surface: #111318; --c-low: #191c20; --c: #1d2024; --c-high: #282a2f; --c-highest: #33353a;
+    --on-surface: #e2e2e9; --on-variant: #c4c6d0; --outline: #8e9099; --outline-var: #44474e;
+    --primary: #aac7ff; --on-primary: #0a305f; --primary-c: #284777; --on-primary-c: #d6e3ff;
+    --secondary-c: #3e4759; --on-secondary-c: #dae2f9;
+    --tertiary-c: #593e5c; --on-tertiary-c: #fbd7fc;
+    --error: #ffb4ab; --on-error: #690005; --error-c: #93000a;
   }
 }
+:root[data-theme="dark"] {
+    --bg: #111318; --on-bg: #e2e2e9;
+    --surface: #111318; --c-low: #191c20; --c: #1d2024; --c-high: #282a2f; --c-highest: #33353a;
+    --on-surface: #e2e2e9; --on-variant: #c4c6d0; --outline: #8e9099; --outline-var: #44474e;
+    --primary: #aac7ff; --on-primary: #0a305f; --primary-c: #284777; --on-primary-c: #d6e3ff;
+    --secondary-c: #3e4759; --on-secondary-c: #dae2f9;
+    --tertiary-c: #593e5c; --on-tertiary-c: #fbd7fc;
+    --error: #ffb4ab; --on-error: #690005; --error-c: #93000a;
+}
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { background: var(--bg); }
-body { margin: 0; color: var(--text); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
-button { font: inherit; color: inherit; cursor: pointer; }
-svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+html { background: var(--bg); color-scheme: light dark; }
+body { margin: 0; color: var(--on-surface); font: 15px/1.4 Roboto, -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
+svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+[hidden] { display: none !important; }
 
-/* header */
-header { position: sticky; top: 0; z-index: 5; background: var(--glass); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-  padding: calc(env(safe-area-inset-top) + 18px) 18px 12px; border-bottom: 1px solid var(--line); }
-.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 0 auto; }
-h1 { margin: 0; font-size: 28px; letter-spacing: -.02em; }
-.sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
-.pill { display: none; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); padding: 6px 11px; border-radius: 99px; margin-top: 4px; white-space: nowrap; }
+/* icon button (48px touch target, state layer on press) */
+.icon { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; color: var(--on-variant); flex: none; transition: background .15s; }
+.icon:active { background: color-mix(in srgb, var(--on-surface) 12%, transparent); }
+
+/* top app bar */
+header { position: sticky; top: 0; z-index: 5; background: var(--surface); padding: env(safe-area-inset-top) 12px 0 16px; }
+.top { display: flex; align-items: center; gap: 8px; max-width: 1000px; margin: 0 auto; min-height: 64px; }
+.top h1 { margin: 0; font-size: 22px; font-weight: 500; flex: 1; min-width: 0; }
+.top h1 small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; font-weight: 400; color: var(--on-variant); margin-top: 1px; letter-spacing: .02em; }
+.pill { display: none; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--on-tertiary-c); background: var(--tertiary-c); padding: 6px 12px; border-radius: 8px; white-space: nowrap; }
 .pill.on { display: inline-flex; }
-.pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite; }
-@keyframes pulse { 50% { opacity: .25; transform: scale(.7); } }
-.search { position: relative; display: block; max-width: 1000px; margin: 12px auto 0; }
-.search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); width: 18px; height: 18px; }
-.search input { width: 100%; padding: 11px 14px 11px 40px; border-radius: 12px; border: 0; background: var(--surface-2); color: var(--text); font-size: 15px; outline: none; }
-.search input:focus { box-shadow: 0 0 0 2px var(--accent); }
+button.pill { cursor: pointer; }
+button.pill:active { filter: brightness(.92); }
+.pill i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: rot .8s linear infinite; }
+.search { position: relative; display: block; max-width: 1000px; margin: 0 auto; padding: 0 4px 12px 0; }
+.search svg { position: absolute; left: 16px; top: 14px; color: var(--on-variant); width: 22px; height: 22px; }
+.search input { width: 100%; height: 50px; padding: 0 18px 0 52px; border-radius: 99px; border: 0; background: var(--c-high); color: var(--on-surface); font-size: 16px; outline: none; }
+.search input::placeholder { color: var(--on-variant); }
+.search input:focus { background: var(--c-highest); }
+header::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--outline-var); opacity: 0; transition: opacity .2s; }
+header.scrolled::after { opacity: .7; }
 
-/* grid */
-#grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px 18px; max-width: 1000px; margin: 0 auto; }
-@media (min-width: 560px) { #grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; } }
-.card { position: relative; border: 0; padding: 0; border-radius: 12px; overflow: hidden; aspect-ratio: 2 / 3; background: var(--surface-2); text-align: left; box-shadow: var(--shadow); transition: transform .15s; }
-.card:active { transform: scale(.96); }
+/* library grid */
+#grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 8px 12px 16px; max-width: 1000px; margin: 0 auto; }
+@media (min-width: 560px) { #grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 12px 16px; } }
+.card { position: relative; display: block; width: 100%; border-radius: var(--r-s); overflow: hidden; aspect-ratio: 2 / 3; background: var(--c-high); text-align: left; transition: transform .12s; }
+.card:active { transform: scale(.97); }
 .card img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ph { width: 100%; height: 100%; background: linear-gradient(135deg, var(--accent), #e5484d); opacity: .5; }
-.card .shade { position: absolute; inset: auto 0 0 0; padding: 38px 8px 8px; background: linear-gradient(to top, rgba(0,0,0,.88), transparent); color: #fff; font-size: 12px; font-weight: 600; line-height: 1.25; }
+.ph { width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary-c), var(--c-highest)); }
+.card .shade { position: absolute; inset: auto 0 0 0; padding: 36px 8px 8px; background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,.45) 55%, transparent); color: #fff; font-size: 12.5px; font-weight: 500; line-height: 1.25; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
 .card .shade span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.badge { position: absolute; top: 7px; left: 7px; font-size: 11px; font-weight: 700; color: #fff; background: rgba(0,0,0,.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: 3px 8px; border-radius: 99px; }
-.skeleton { aspect-ratio: 2/3; border-radius: 12px; background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface) 50%, var(--surface-2) 70%); background-size: 200% 100%; animation: sh 1.2s infinite; }
+/* badge like Mihon's unread counter */
+.badge { position: absolute; top: 6px; left: 6px; min-width: 22px; text-align: center; font-size: 11.5px; font-weight: 600; color: var(--on-primary); background: var(--primary); padding: 2px 7px; border-radius: 6px; line-height: 1.35; }
+.badge.zero { background: var(--c-highest); color: var(--on-variant); }
+.skeleton { aspect-ratio: 2/3; border-radius: var(--r-s); background: linear-gradient(100deg, var(--c-high) 30%, var(--c-highest) 50%, var(--c-high) 70%); background-size: 200% 100%; animation: sh 1.2s infinite; }
 @keyframes sh { to { background-position: -200% 0; } }
-.empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 70px 20px; }
-.empty svg { width: 46px; height: 46px; opacity: .5; margin-bottom: 10px; }
+.empty { grid-column: 1 / -1; text-align: center; color: var(--on-variant); padding: 90px 24px; line-height: 1.5; }
+.empty svg { width: 56px; height: 56px; opacity: .55; margin-bottom: 14px; }
+.empty b { display: block; color: var(--on-surface); font-size: 18px; font-weight: 500; margin-bottom: 4px; }
 
-/* add button */
-#fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 22px); z-index: 6; display: flex; align-items: center; gap: 8px;
-  padding: 15px 24px; border: 0; border-radius: 99px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-weight: 700; font-size: 15px; box-shadow: 0 10px 28px rgba(124,108,255,.5); }
-#fab:active { transform: translateX(-50%) scale(.96); }
+/* download status */
+.dl { display: grid; gap: 14px; margin-top: 4px; max-height: 55vh; overflow-y: auto; }
+.dl .row { display: flex; gap: 12px; align-items: center; }
+.dl img, .dl .ph { width: 40px; aspect-ratio: 2/3; height: auto; border-radius: 6px; object-fit: cover; flex: none; }
+.dl .t { flex: 1; min-width: 0; }
+.dl .t b { display: block; font-weight: 500; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl .t small { display: block; color: var(--on-variant); font-size: 12.5px; margin-top: 1px; }
+.bar { height: 4px; border-radius: 4px; background: var(--c-highest); margin-top: 7px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--primary); border-radius: 4px; transition: width .4s; }
+.bar.ind i { width: 35%; animation: ind 1.2s ease-in-out infinite alternate; }
+@keyframes ind { from { margin-left: 0; } to { margin-left: 65%; } }
+.dl .state { font-size: 12px; font-weight: 500; color: var(--on-variant); flex: none; }
+.dl .state.ok { color: var(--primary); }
+.dl .state.bad { color: var(--error); }
+.card .dlmark { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; background: var(--tertiary-c); color: var(--on-tertiary-c); display: grid; place-items: center; }
+.card .dlmark i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: rot .8s linear infinite; }
+.card .dlmark.wait { opacity: .75; }
+.card .dlmark.wait i { animation: none; border-top-color: currentColor; width: 4px; height: 4px; background: currentColor; border: 0; }
+.card .newtag { position: absolute; top: 6px; right: 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; color: var(--on-tertiary-c); background: var(--tertiary-c); padding: 2px 7px; border-radius: 6px; }
 
-/* bottom sheets */
-dialog { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 520px; border-radius: 24px 24px 0 0; background: var(--surface); color: var(--text); animation: up .25s ease-out; }
-dialog::backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(2px); }
-@keyframes up { from { transform: translateY(40px); opacity: 0; } }
-.sheet { padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); }
-.grab { width: 38px; height: 4px; border-radius: 4px; background: var(--surface-2); margin: 0 auto 16px; }
-.sheet h2 { margin: 0 0 14px; font-size: 20px; letter-spacing: -.01em; }
-.field { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; border: 0; background: var(--surface-2); color: var(--text); outline: none; }
-.field:focus { box-shadow: 0 0 0 2px var(--accent); }
-.hint { color: var(--muted); font-size: 12.5px; margin: 8px 2px 0; }
-.err { color: var(--danger); font-size: 13.5px; margin-top: 10px; min-height: 1.2em; }
-.btn { width: 100%; padding: 15px; border-radius: 14px; border: 0; font-weight: 700; font-size: 16px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.btn.ghost { background: var(--surface-2); color: var(--text); }
-.btn.danger { background: transparent; color: var(--danger); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--danger) 55%, transparent); }
-.btn.danger.armed { background: var(--danger); color: #fff; box-shadow: none; }
-.btn:disabled { opacity: .55; }
-.spin { width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: rot .7s linear infinite; display: none; }
+/* "what's new" popup */
+#newDlg { margin: auto; width: min(380px, calc(100% - 32px)); border-radius: var(--r-xl); background: var(--c-low); overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,.4); }
+#newDlg[open] { animation: pop .3s cubic-bezier(.2,0,0,1); }
+@keyframes pop { from { transform: translateY(24px) scale(.94); opacity: 0; } }
+.nw { padding: 24px 0 18px; text-align: center; }
+.nw h2 { margin: 0; font-size: 22px; font-weight: 500; padding: 0 24px; }
+.nw p { margin: 4px 24px 0; color: var(--on-variant); font-size: 13.5px; }
+.nw .covers { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 20px 24px 8px; scrollbar-width: none; }
+.nw .covers::-webkit-scrollbar { display: none; }
+.nw .covers:has(> :only-child), .nw .covers:has(> :nth-child(2):last-child) { justify-content: center; }
+.nw .it { flex: none; width: 112px; scroll-snap-align: center; text-align: left; }
+.nw .it .im { position: relative; aspect-ratio: 2/3; border-radius: var(--r-m); overflow: hidden; background: var(--c-high); box-shadow: 0 6px 16px rgba(0,0,0,.3); animation: rise .45s cubic-bezier(.2,0,0,1) backwards; animation-delay: calc(var(--i) * 70ms + 120ms); }
+@keyframes rise { from { transform: translateY(18px) scale(.9); opacity: 0; } }
+.nw .it img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nw .it .n { position: absolute; top: 6px; left: 6px; font-size: 11.5px; font-weight: 700; color: var(--on-primary); background: var(--primary); padding: 2px 7px; border-radius: 6px; }
+.nw .it b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; font-weight: 500; line-height: 1.25; margin-top: 9px; }
+.nw .it small { display: block; color: var(--on-variant); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nw .btn { width: calc(100% - 48px); margin: 14px 24px 0; }
+
+/* recommendations */
+#recList { padding: 4px 12px calc(24px + env(safe-area-inset-bottom)); display: grid; gap: 10px; max-width: 720px; margin: 0 auto; }
+.rec { background: var(--c-low); border-radius: var(--r-l); padding: 12px; animation: fade .3s ease-out backwards; animation-delay: calc(var(--i, 0) * 35ms); }
+.rec .top2 { display: flex; gap: 14px; }
+.rec .cv { position: relative; width: 84px; flex: none; }
+.rec .cv img, .rec .cv .ph { width: 100%; aspect-ratio: 2/3; height: auto; border-radius: var(--r-m); object-fit: cover; display: block; background: var(--c-high); box-shadow: 0 3px 10px rgba(0,0,0,.25); }
+.rec .match { position: absolute; left: 6px; bottom: 6px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: var(--primary); color: var(--on-primary); }
+.rec .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rec .name { display: flex; align-items: flex-start; gap: 4px; }
+.rec .name b { flex: 1; font-size: 16px; font-weight: 500; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rec .name a { color: var(--outline); display: grid; place-items: center; width: 28px; height: 28px; margin: -4px -4px 0 0; border-radius: 50%; }
+.rec .name a svg { width: 17px; height: 17px; }
+.rec .why { color: var(--on-variant); font-size: 12.5px; line-height: 1.35; margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rec .why em { font-style: normal; color: var(--on-surface); }
+.rec .chips { display: flex; gap: 5px; margin-top: auto; padding-top: 8px; overflow: hidden; }
+.rec .chips span { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: var(--c-high); color: var(--on-variant); white-space: nowrap; }
+.rec .acts { display: flex; gap: 8px; margin-top: 12px; }
+.rec .acts .btn { height: 40px; padding: 0 14px; font-size: 13.5px; gap: 6px; width: auto; white-space: nowrap; }
+.rec .acts .btn svg { width: 18px; height: 18px; }
+.rec .acts .btn.main { flex: 1; }
+.rec .acts .btn.ghost { background: none; color: var(--on-variant); box-shadow: inset 0 0 0 1px var(--outline-var); }
+.rec.skel { height: 190px; background: linear-gradient(100deg, var(--c-low) 30%, var(--c-high) 50%, var(--c-low) 70%); background-size: 200% 100%; animation: sh 1.2s infinite; }
+.recbar { padding: 2px 20px 10px; color: var(--on-variant); font-size: 13px; line-height: 1.4; }
+.recbar b { color: var(--on-surface); font-weight: 500; }
+.note { text-align: center; color: var(--on-variant); padding: 56px 28px; line-height: 1.5; }
+.note svg { width: 48px; height: 48px; opacity: .5; margin-bottom: 12px; }
+.note b { display: block; color: var(--on-surface); font-weight: 500; font-size: 17px; margin-bottom: 2px; }
+.hrow { display: flex; gap: 12px; align-items: center; padding: 8px 16px; }
+.hrow img, .hrow .ph { width: 42px; aspect-ratio: 2/3; height: auto; border-radius: 6px; object-fit: cover; flex: none; background: var(--c-high); }
+.hrow .t { flex: 1; min-width: 0; }
+.hrow .t b { display: block; font-weight: 500; font-size: 14.5px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hrow .t small { color: var(--on-variant); font-size: 12px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.hrow .btns { display: flex; gap: 6px; flex: none; }
+.hrow .btn { width: auto; height: 34px; padding: 0 12px; font-size: 13px; }
+.hrow .btn.ghost { background: none; color: var(--on-variant); box-shadow: inset 0 0 0 1px var(--outline-var); }
+.hsec { display: flex; align-items: center; gap: 8px; padding: 18px 20px 4px; color: var(--on-variant); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.hsec i { font-style: normal; font-weight: 600; background: var(--c-high); color: var(--on-surface); border-radius: 99px; padding: 0 8px; line-height: 18px; letter-spacing: 0; }
+.hsearch { position: sticky; top: 64px; z-index: 2; display: block; padding: 4px 16px 10px; background: var(--surface); }
+.hsearch .field { height: 48px; border-radius: 99px; border-bottom-width: 0; padding: 0 20px; background: var(--c-high); }
+#histRes { background: var(--c-low); margin: 0 12px; border-radius: var(--r-l); }
+#histRes:empty { display: none; }
+
+/* extended FAB */
+#fab { position: fixed; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 16px); z-index: 6; display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 20px 0 16px; border-radius: var(--r-l);
+  background: var(--primary-c); color: var(--on-primary-c); font-weight: 500; font-size: 15px; letter-spacing: .01em; box-shadow: 0 3px 8px rgba(0,0,0,.28), 0 1px 3px rgba(0,0,0,.2); transition: transform .12s; }
+#fab:active { transform: scale(.96); }
+
+/* buttons */
+.btn { width: 100%; height: 48px; padding: 0 24px; border-radius: 99px; font-weight: 500; font-size: 15px; letter-spacing: .01em; background: var(--primary); color: var(--on-primary); display: flex; align-items: center; justify-content: center; gap: 10px; transition: filter .15s; }
+.btn:active { filter: brightness(.9); }
+.btn.tonal { background: var(--secondary-c); color: var(--on-secondary-c); }
+.btn.text { background: none; color: var(--primary); }
+.btn.danger { background: none; color: var(--error); box-shadow: inset 0 0 0 1px var(--outline); }
+.btn.danger.armed { background: var(--error); color: var(--on-error); box-shadow: none; }
+.btn:disabled { opacity: .5; }
+.spin { width: 16px; height: 16px; border: 2.5px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: rot .7s linear infinite; display: none; opacity: .8; }
 .btn.busy .spin { display: inline-block; }
 @keyframes rot { to { transform: rotate(360deg); } }
 .stack { display: grid; gap: 10px; margin-top: 18px; }
+.field { width: 100%; height: 56px; padding: 0 16px; font-size: 16px; border-radius: 4px 4px 0 0; border: 0; border-bottom: 2px solid var(--outline); background: var(--c-high); color: var(--on-surface); outline: none; }
+.field:focus { border-bottom-color: var(--primary); }
+.hint { color: var(--on-variant); font-size: 12.5px; margin: 8px 16px 0; }
+.err { color: var(--error); font-size: 13.5px; margin-top: 10px; min-height: 1.2em; }
 
-.media { display: flex; gap: 14px; align-items: center; margin-bottom: 4px; }
-.media img, .media .ph { width: 78px; aspect-ratio: 2/3; height: auto; border-radius: 10px; object-fit: cover; background: var(--surface-2); flex: none; box-shadow: var(--shadow); }
-.media b { font-size: 17px; display: block; }
-.media span { color: var(--muted); font-size: 13.5px; }
-
-.seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface-2); border-radius: 12px; padding: 3px; margin-top: 14px; }
-.seg button { border: 0; background: none; padding: 10px 4px; border-radius: 10px; font-size: 13.5px; font-weight: 600; color: var(--muted); }
-.seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.18); }
-#fromWrap { display: none; margin-top: 10px; }
+/* dialogs: modal bottom sheet and full-screen pages */
+dialog { border: 0; padding: 0; color: var(--on-surface); background: var(--surface); }
+dialog::backdrop { background: var(--scrim); }
+#addDlg, #dlDlg { margin: auto auto 0; width: 100%; max-width: 560px; border-radius: var(--r-xl) var(--r-xl) 0 0; background: var(--c-low); animation: up .25s cubic-bezier(.2,0,0,1); }
+@keyframes up { from { transform: translateY(48px); opacity: 0; } }
+.sheet { padding: 12px 24px calc(24px + env(safe-area-inset-bottom)); }
+.grab { width: 32px; height: 4px; border-radius: 4px; background: var(--outline); opacity: .4; margin: 0 auto 18px; }
+.sheet h2 { margin: 0 0 16px; font-size: 22px; font-weight: 400; }
+.media { display: flex; gap: 16px; align-items: center; }
+.media img, .media .ph { width: 72px; aspect-ratio: 2/3; height: auto; border-radius: var(--r-s); object-fit: cover; flex: none; }
+.media b { font-size: 17px; font-weight: 500; display: block; }
+.media span { color: var(--on-variant); font-size: 13.5px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 18px; border: 1px solid var(--outline); border-radius: 99px; overflow: hidden; }
+.seg button { height: 40px; font-size: 13.5px; font-weight: 500; color: var(--on-surface); border-left: 1px solid var(--outline); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.seg button:first-child { border-left: 0; }
+.seg button.on { background: var(--secondary-c); color: var(--on-secondary-c); }
+.seg button.on::before { content: "✓"; font-size: 13px; }
+#fromWrap { display: none; margin-top: 12px; }
 #fromWrap.show { display: block; }
 
-#toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 16px); transform: translate(-50%, -20px); background: var(--text); color: var(--bg); padding: 11px 18px; border-radius: 99px; font-size: 14px; font-weight: 600; opacity: 0; transition: .25s; pointer-events: none; z-index: 20; white-space: nowrap; }
-#toast.show { opacity: 1; transform: translate(-50%, 0); }
+.screen { margin: 0; width: 100%; height: 100%; max-width: none; max-height: none; overflow-y: auto; animation: fade .2s ease-out; }
+@keyframes fade { from { opacity: 0; transform: translateY(12px); } }
+.appbar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 4px; min-height: 64px; padding: env(safe-area-inset-top) 8px 0 4px; background: var(--surface); }
+.appbar.clear { background: transparent; position: absolute; left: 0; right: 0; }
+.appbar h2 { margin: 0; flex: 1; font-size: 20px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.appbar .sub { font-size: 12px; color: var(--on-variant); }
+
+/* manga details (like Mihon's header) */
+.hero { position: relative; overflow: hidden; padding: calc(env(safe-area-inset-top) + 72px) 20px 20px; }
+.hero .bg { position: absolute; inset: -20px; background-size: cover; background-position: center top; filter: blur(28px) saturate(1.2); opacity: .45; transform: scale(1.1); }
+.hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 30%, var(--surface)); }
+.hero .media { position: relative; z-index: 1; align-items: flex-end; gap: 18px; }
+.hero .media img, .hero .media .ph { width: 112px; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.hero .media b { font-size: 21px; line-height: 1.2; margin-bottom: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 8px; background: var(--secondary-c); color: var(--on-secondary-c); font-size: 12.5px; font-weight: 500; }
+.body { max-width: 640px; margin: 0 auto; padding: 4px 20px calc(32px + env(safe-area-inset-bottom)); }
+
+/* chapter list */
+.chlist { max-width: 720px; margin: 0 auto; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+.ch { display: flex; align-items: center; gap: 14px; padding: 12px 8px 12px 20px; cursor: pointer; transition: background .15s; }
+.ch:active { background: color-mix(in srgb, var(--on-surface) 10%, transparent); }
+.ch .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex: none; }
+.ch.started .dot { background: transparent; box-shadow: inset 0 0 0 2px var(--primary); }
+.ch .t { flex: 1; min-width: 0; }
+.ch .t b { display: block; font-weight: 400; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch .t small { display: flex; gap: 8px; color: var(--on-variant); font-size: 12.5px; margin-top: 1px; }
+.ch .prog { color: var(--primary); font-weight: 500; }
+.ch .prog:empty { display: none; }
+.ch svg { color: var(--outline); width: 20px; height: 20px; margin-right: 4px; }
+.ch.done .t b, .ch.done .dot { opacity: .5; }
+.chlist .none { padding: 64px 24px; text-align: center; color: var(--on-variant); }
+
+/* reader */
+#reader { margin: 0; width: 100%; height: 100%; max-width: none; max-height: none; background: #000; color: #fff; overflow-y: auto; }
+#reader .bar { position: fixed; top: 0; left: 0; right: 0; z-index: 2; display: flex; align-items: center; gap: 4px; padding: env(safe-area-inset-top) 12px 0 4px; min-height: calc(56px + env(safe-area-inset-top)); background: rgba(17,19,24,.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #e2e2e9; transition: transform .25s; }
+#reader .bar .icon { color: #e2e2e9; }
+#reader .bar b { flex: 1; font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#reader .bar span { font-size: 13px; font-variant-numeric: tabular-nums; opacity: .8; }
+#reader.immersive .bar { transform: translateY(-110%); }
+#rProg { position: fixed; left: 0; bottom: 0; height: 3px; width: 0; background: var(--primary); z-index: 3; transition: width .2s; }
+#pages { max-width: 900px; margin: 0 auto; }
+#pages img { display: block; width: 100%; height: auto; min-height: 60vh; background: #111; }
+#pages .sep { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 44px 20px; background: #111318; color: #c4c6d0; text-align: center; }
+#pages .sep span { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); }
+#pages .sep b { font-size: 18px; font-weight: 500; color: #e2e2e9; }
+#pages .msg.end { padding: 64px 20px calc(80px + env(safe-area-inset-bottom)); }
+#pages .msg { color: #9a9ca4; text-align: center; padding: 120px 20px; }
+
+#toast { position: fixed; left: 16px; right: 16px; max-width: 480px; margin: 0 auto; bottom: calc(env(safe-area-inset-bottom) + 20px); background: #2e3036; color: #e2e2e9; padding: 14px 16px; border-radius: 6px; font-size: 14px; box-shadow: 0 3px 10px rgba(0,0,0,.35); opacity: 0; transform: translateY(12px); transition: .22s; pointer-events: none; z-index: 2147483647; }
+#toast.show { opacity: 1; transform: none; }
+
+/* ───────── v2: tabs, Now, filters, stats, preferences ───────── */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+:root { --nav-h: 72px; --ok: #2e7d4f; --ok-c: #c8f0d6; --on-ok-c: #00210f; --warn-c: #ffe2b0; --on-warn-c: #3a2600; }
+:root[data-theme="dark"] { --ok: #7fd9a1; --ok-c: #1f4a31; --on-ok-c: #c8f0d6; --warn-c: #5a4100; --on-warn-c: #ffe2b0; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) { --ok: #7fd9a1; --ok-c: #1f4a31; --on-ok-c: #c8f0d6; --warn-c: #5a4100; --on-warn-c: #ffe2b0; } }
+
+body { padding-bottom: calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); }
+.view { max-width: 1000px; margin: 0 auto; animation: fade .22s ease-out; }
+.pad { max-width: 720px; margin: 0 auto; padding-bottom: 8px; }
+
+/* header: search + view button, filter chips */
+.hx { max-width: 1000px; margin: 0 auto; }
+.srow { display: flex; align-items: center; gap: 4px; padding-bottom: 8px; }
+.srow .search { flex: 1; padding: 0; margin: 0; }
+.srow .icon { background: var(--c-high); }
+.fchips { display: flex; gap: 8px; overflow-x: auto; padding: 0 16px 12px 0; scrollbar-width: none; }
+.fchips::-webkit-scrollbar { display: none; }
+.fc { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--on-variant); box-shadow: inset 0 0 0 1px var(--outline-var); white-space: nowrap; transition: background .15s; }
+.fc b { font-weight: 500; opacity: .7; font-variant-numeric: tabular-nums; }
+.fc:active { background: color-mix(in srgb, var(--on-surface) 10%, transparent); }
+.fc.on { background: var(--secondary-c); color: var(--on-secondary-c); box-shadow: none; }
+.fc.on::before { content: "✓"; font-size: 12px; }
+.fchips.pad2 { padding: 4px 16px 10px; }
+
+/* bottom navigation */
+#nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; display: flex; justify-content: center; gap: 4px; padding: 10px 8px calc(10px + env(safe-area-inset-bottom)); background: var(--c); box-shadow: 0 -1px 0 var(--outline-var); }
+#nav button { flex: 1; max-width: 140px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: var(--on-variant); }
+#nav .ind { position: relative; display: grid; place-items: center; width: 64px; height: 32px; border-radius: 16px; transition: background .2s; }
+#nav .ind svg { width: 24px; height: 24px; }
+#nav .ind em { position: absolute; top: -2px; right: 10px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--error); color: var(--on-error); font-style: normal; font-size: 10.5px; font-weight: 700; line-height: 16px; text-align: center; }
+#nav button.on { color: var(--on-surface); }
+#nav button.on .ind { background: var(--secondary-c); color: var(--on-secondary-c); }
+#nav button:active .ind { background: color-mix(in srgb, var(--on-surface) 12%, transparent); }
+#fab { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px); }
+#toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 20px); }
+dialog #toast { bottom: calc(env(safe-area-inset-bottom) + 20px); }
+
+/* sections */
+.sh { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 24px 20px 8px; }
+.sh h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: .01em; }
+.sh small { color: var(--on-variant); font-size: 12.5px; }
+.sh button { color: var(--primary); font-size: 13px; font-weight: 500; }
+.hscroll { display: flex; gap: 12px; overflow-x: auto; padding: 4px 20px 8px; scroll-snap-type: x proximity; scroll-padding: 0 20px; scrollbar-width: none; }
+.hscroll::-webkit-scrollbar { display: none; }
+.mini { flex: none; width: 112px; scroll-snap-align: start; text-align: left; transition: transform .12s; }
+.mini:active { transform: scale(.97); }
+.mini.wide { width: 148px; }
+.mini .im { position: relative; aspect-ratio: 2/3; border-radius: var(--r-m); overflow: hidden; background: var(--c-high); box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+.mini .im img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mini .tag { position: absolute; top: 6px; left: 6px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: var(--primary); color: var(--on-primary); }
+.mini .tag.t2 { background: var(--tertiary-c); color: var(--on-tertiary-c); }
+.mini .pb { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0,0,0,.45); }
+.mini .pb i { display: block; height: 100%; background: var(--primary-c); }
+.mini b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; font-weight: 500; line-height: 1.25; margin-top: 8px; }
+.mini small { display: block; color: var(--on-variant); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* "Now" summary */
+.sum { margin: 8px 16px 0; padding: 20px; border-radius: var(--r-xl); background: linear-gradient(140deg, var(--primary-c), color-mix(in srgb, var(--tertiary-c) 70%, var(--primary-c))); color: var(--on-primary-c); position: relative; overflow: hidden; }
+.sum .big { display: flex; align-items: baseline; gap: 10px; }
+.sum .big b { font-size: 46px; font-weight: 600; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.sum .big span { font-size: 15px; font-weight: 500; opacity: .85; }
+.sum p { margin: 6px 0 0; font-size: 13.5px; opacity: .85; }
+.sum .row2 { display: flex; align-items: flex-end; gap: 16px; margin-top: 16px; }
+.sum .spark { display: flex; align-items: flex-end; gap: 5px; height: 40px; flex: 1; }
+.sum .spark i { flex: 1; min-height: 4px; border-radius: 3px; background: color-mix(in srgb, var(--on-primary-c) 22%, transparent); }
+.sum .spark i.hit { background: var(--on-primary-c); opacity: .8; }
+.sum .spark i.today { outline: 2px solid color-mix(in srgb, var(--on-primary-c) 55%, transparent); outline-offset: 1px; }
+.sum .btn { width: auto; height: 40px; padding: 0 16px; font-size: 13.5px; background: var(--on-primary-c); color: var(--primary-c); flex: none; }
+.sum .btn svg { width: 18px; height: 18px; }
+.sum .lab { display: flex; gap: 6px; margin-top: 4px; font-size: 11px; opacity: .6; }
+.sum .lab span { flex: 1; text-align: center; }
+
+/* alerts */
+.alerts { display: grid; gap: 8px; padding: 12px 16px 0; }
+.alert { display: flex; align-items: center; gap: 12px; padding: 12px 8px 12px 14px; border-radius: var(--r-l); background: var(--error-c); color: var(--on-surface); }
+.alert.warn { background: var(--warn-c); color: var(--on-warn-c); }
+.alert > svg { color: var(--error); width: 22px; height: 22px; }
+.alert.warn > svg { color: inherit; }
+.alert .t { flex: 1; min-width: 0; }
+.alert .t b { display: block; font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.alert .t small { display: block; font-size: 12.5px; opacity: .8; }
+.alert button { height: 36px; padding: 0 14px; border-radius: 99px; font-size: 13px; font-weight: 500; background: color-mix(in srgb, currentColor 14%, transparent); }
+
+/* up next queue */
+.qlist { display: grid; gap: 8px; padding: 0 16px; }
+.qrow { display: flex; align-items: center; gap: 12px; padding: 8px 4px 8px 8px; border-radius: var(--r-l); background: var(--c-low); }
+.qrow .go { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left; }
+.qrow img, .qrow .ph { width: 44px; aspect-ratio: 2/3; height: auto; border-radius: 6px; object-fit: cover; flex: none; background: var(--c-high); }
+.qrow .t { min-width: 0; }
+.qrow .t b { display: block; font-size: 14.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qrow .t small { display: block; color: var(--on-variant); font-size: 12.5px; margin-top: 1px; }
+.qrow .n { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary-c); color: var(--on-primary-c); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.qrow .icon { width: 40px; height: 40px; }
+.qrow .icon svg { width: 20px; height: 20px; }
+.hintcard { margin: 0 16px; padding: 16px; border-radius: var(--r-l); box-shadow: inset 0 0 0 1px var(--outline-var); color: var(--on-variant); font-size: 13.5px; line-height: 1.45; text-align: center; }
+.hintcard b { color: var(--on-surface); font-weight: 500; }
+
+/* library cards: state marks and list density */
+.card .stm { position: absolute; top: 6px; right: 6px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: var(--c-highest); color: var(--on-variant); display: grid; place-items: center; font-size: 11.5px; font-weight: 700; }
+.card .stm svg, .lrow .stm svg { width: 14px; height: 14px; stroke-width: 2.4; }
+.stm.err { background: var(--error); color: var(--on-error); }
+.stm.ok { background: var(--ok-c); color: var(--on-ok-c); }
+.stm.q { background: var(--primary-c); color: var(--on-primary-c); }
+.card.dim img, .card.dim .ph { opacity: .55; filter: saturate(.5); }
+.card .eta { position: absolute; left: 6px; bottom: 44px; }
+#grid[data-d="2"] { grid-template-columns: repeat(2, 1fr); }
+#grid[data-d="4"] { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+#grid[data-d="4"] .card .shade { font-size: 11px; padding: 28px 6px 6px; }
+#grid[data-d="4"] .badge { font-size: 10.5px; min-width: 18px; padding: 1px 5px; }
+@media (min-width: 560px) {
+  #grid[data-d="2"] { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  #grid[data-d="3"] { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  #grid[data-d="4"] { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+}
+#grid[data-d="list"] { grid-template-columns: 1fr; gap: 2px; padding: 4px 8px 16px; max-width: 720px; }
+.lrow { display: flex; align-items: center; gap: 14px; width: 100%; padding: 8px 12px 8px 8px; border-radius: var(--r-l); text-align: left; transition: background .15s; }
+.lrow:active { background: color-mix(in srgb, var(--on-surface) 10%, transparent); }
+.lrow img, .lrow .ph { width: 44px; aspect-ratio: 2/3; height: auto; object-fit: cover; border-radius: 6px; flex: none; background: var(--c-high); }
+.lrow.dim img, .lrow.dim .ph { opacity: .55; }
+.lrow .t { flex: 1; min-width: 0; }
+.lrow .t b { display: block; font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrow .t small { display: block; color: var(--on-variant); font-size: 12.5px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrow .stm { min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: var(--c-highest); color: var(--on-variant); display: grid; place-items: center; font-size: 11.5px; font-weight: 700; flex: none; }
+.lrow .badge { position: static; flex: none; }
+.lrow .dlmark { position: static; width: 24px; height: 24px; border-radius: 50%; background: var(--tertiary-c); color: var(--on-tertiary-c); display: grid; place-items: center; flex: none; }
+.lrow .dlmark i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: rot .8s linear infinite; }
+
+/* stats */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 8px 16px 0; }
+.tile { padding: 14px 12px; border-radius: var(--r-l); background: var(--c-low); }
+.tile b { display: block; font-size: 28px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.tile small { display: block; margin-top: 4px; color: var(--on-variant); font-size: 12px; line-height: 1.25; }
+.tile.hl { background: var(--primary-c); color: var(--on-primary-c); }
+.tile.hl small { color: inherit; opacity: .8; }
+.panel { margin: 12px 16px 0; padding: 16px; border-radius: var(--r-l); background: var(--c-low); }
+.panel h4 { margin: 0 0 12px; font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; }
+.panel h4 small { font-weight: 400; color: var(--on-variant); font-size: 12px; }
+.heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; }
+.heat i { aspect-ratio: 1; border-radius: 3px; background: var(--c-high); }
+.heat i.l1 { background: color-mix(in srgb, var(--primary) 30%, var(--c-high)); }
+.heat i.l2 { background: color-mix(in srgb, var(--primary) 55%, var(--c-high)); }
+.heat i.l3 { background: color-mix(in srgb, var(--primary) 80%, var(--c-high)); }
+.heat i.l4 { background: var(--primary); }
+.heat i.pad0 { background: none; }
+.heat i.today { outline: 2px solid var(--outline); outline-offset: -1px; }
+.legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 10px; font-size: 11px; color: var(--on-variant); }
+.legend i { width: 11px; height: 11px; border-radius: 3px; background: var(--c-high); }
+.wbars { display: flex; align-items: flex-end; gap: 8px; height: 100px; }
+.wbars div { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; font-size: 11px; color: var(--on-variant); }
+.wbars div i { display: block; width: 100%; min-height: 3px; border-radius: 6px 6px 3px 3px; background: var(--secondary-c); }
+.wbars div:last-child i { background: var(--primary); }
+.wbars div span { font-variant-numeric: tabular-nums; }
+.mix { display: flex; height: 10px; border-radius: 6px; overflow: hidden; gap: 2px; background: var(--c-high); }
+.mix i { display: block; min-width: 4px; }
+.mixl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-top: 14px; }
+.mixl div { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.mixl div i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.mixl div b { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+.toprow { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+.toprow img, .toprow .ph { width: 34px; aspect-ratio: 2/3; height: auto; border-radius: 5px; object-fit: cover; flex: none; background: var(--c-high); }
+.toprow .t { flex: 1; min-width: 0; }
+.toprow .t b { display: block; font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toprow .t i { display: block; height: 4px; border-radius: 4px; background: var(--primary); margin-top: 6px; }
+.toprow span { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.foot { text-align: center; color: var(--on-variant); font-size: 12.5px; padding: 18px 24px 6px; line-height: 1.5; }
+
+/* sheets: preferences and view options */
+#prefDlg, #viewDlg { margin: auto auto 0; width: 100%; max-width: 560px; border-radius: var(--r-xl) var(--r-xl) 0 0; background: var(--c-low); animation: up .25s cubic-bezier(.2,0,0,1); max-height: 90vh; }
+.lbl { margin: 18px 0 8px; color: var(--on-variant); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.seg { grid-template-columns: repeat(var(--n, 3), 1fr); }
+.lbl + .seg { margin-top: 0; }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.set { display: flex; align-items: center; gap: 14px; padding: 14px 0 2px; }
+.set .t { flex: 1; min-width: 0; }
+.set .t b { display: block; font-weight: 500; font-size: 15px; }
+.set .t small { display: block; color: var(--on-variant); font-size: 12.5px; margin-top: 2px; line-height: 1.35; }
+.sw { flex: none; position: relative; width: 52px; height: 32px; border-radius: 16px; background: var(--c-highest); box-shadow: inset 0 0 0 2px var(--outline); transition: background .2s; }
+.sw i { position: absolute; top: 8px; left: 8px; width: 16px; height: 16px; border-radius: 50%; background: var(--outline); transition: .2s; }
+.sw[aria-checked="true"] { background: var(--primary); box-shadow: none; }
+.sw[aria-checked="true"] i { left: 24px; top: 4px; width: 24px; height: 24px; background: var(--on-primary); }
+.btn.sm { width: auto; height: 36px; padding: 0 16px; font-size: 13.5px; }
+
+/* manga details */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip.ok { background: var(--ok-c); color: var(--on-ok-c); }
+.chip.warn { background: var(--warn-c); color: var(--on-warn-c); }
+.chip.err { background: var(--error-c); color: var(--on-surface); }
+.pace { margin: 16px 4px 0; padding: 14px 16px; border-radius: var(--r-l); background: var(--c-low); font-size: 13.5px; line-height: 1.45; color: var(--on-variant); }
+.pace b { color: var(--on-surface); font-weight: 600; }
+.acts2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.acts2 .btn { height: 52px; font-size: 14px; padding: 0 14px; }
+.acts2 .btn.on { background: var(--primary-c); color: var(--on-primary-c); }
+.acts2 .btn svg { width: 20px; height: 20px; }
+
+/* chapter selection */
+.ch .box { display: none; width: 22px; height: 22px; border-radius: 6px; box-shadow: inset 0 0 0 2px var(--outline); place-items: center; color: transparent; flex: none; }
+.ch .box svg { width: 16px; height: 16px; margin: 0; color: inherit; stroke-width: 3; }
+.chlist.sel .box { display: grid; }
+.chlist.sel .dot { display: none; }
+.chlist.sel .ch > svg:last-child { display: none; }
+.ch.picked { background: color-mix(in srgb, var(--primary) 14%, transparent); }
+.ch.picked .box { background: var(--primary); box-shadow: none; color: var(--on-primary); }
+.chbar { padding: 4px 20px 6px; color: var(--on-variant); font-size: 12.5px; }
+#selBar { position: fixed; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom) + 16px); max-width: 520px; margin: 0 auto; z-index: 4; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 20px; border-radius: 28px; background: var(--c-highest); box-shadow: 0 6px 20px rgba(0,0,0,.35); animation: up .2s cubic-bezier(.2,0,0,1); }
+#selBar span { flex: 1; font-size: 14px; font-weight: 500; }
+#selBar .btn { width: auto; height: 40px; padding: 0 16px; font-size: 13.5px; }
+
+.recfilters { padding: 0 16px 8px; }
+.morebtn { display: block; margin: 8px auto 0; width: calc(100% - 24px); max-width: 720px; }
+.rec .why { cursor: pointer; }
+.rec .why.open { -webkit-line-clamp: unset; display: block; }
+.rec .chips span.sh2 { background: var(--secondary-c); color: var(--on-secondary-c); }
 </style>
 </head>
 <body>
-<header>
+<header id="appHeader">
   <div class="top">
-    <div><h1>Library</h1><div class="sub" id="sub">&nbsp;</div></div>
-    <span class="pill" id="pill"><i></i>Downloading</span>
+    <h1><span id="hTitle">Now</span><small id="sub">&nbsp;</small></h1>
+    <button class="icon" id="histBtn" hidden aria-label="Read history"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></svg></button>
+    <button class="pill" id="pill" aria-label="Download status"><i></i><span id="pillTxt">Downloading</span></button>
+    <button class="icon" id="prefBtn" aria-label="Preferences"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </div>
-  <label class="search">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-    <input id="q" type="search" placeholder="Search your mangas" autocomplete="off">
-  </label>
+  <div class="hx" id="libTools" hidden>
+    <div class="srow">
+      <label class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Search library" autocomplete="off">
+      </label>
+      <button class="icon" id="viewBtn" aria-label="Sort and view"><svg viewBox="0 0 24 24"><path d="M4 6h8M16 6h4M4 12h2M10 12h10M4 18h10M18 18h2"/><circle cx="14" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></svg></button>
+    </div>
+    <div class="fchips" id="filterChips"></div>
+  </div>
 </header>
 
-<main id="grid"></main>
+<main>
+  <section class="view" id="v-now"><div class="pad" id="nowBody"></div></section>
+  <section class="view" id="v-library" hidden><div id="grid"></div></section>
+  <section class="view" id="v-discover" hidden>
+    <div class="recbar" id="recInfo"></div>
+    <div class="fchips pad2" id="recChips"></div>
+    <div id="recList"></div>
+  </section>
+  <section class="view" id="v-stats" hidden><div class="pad" id="statsBody"></div></section>
+</main>
 
-<button id="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add manga</button>
+<nav id="nav" aria-label="Sections">
+  <button data-tab="now" class="on"><span class="ind"><svg viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg><em id="navBadge" hidden></em></span>Now</button>
+  <button data-tab="library"><span class="ind"><svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg></span>Library</button>
+  <button data-tab="discover"><span class="ind"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></span>Discover</button>
+  <button data-tab="stats"><span class="ind"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 14v4M12 9v9M17 5v13"/></svg></span>Stats</button>
+</nav>
+
+<button id="fab" hidden><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add manga</button>
 
 <dialog id="addDlg"><div class="sheet">
   <div class="grab"></div>
   <h2>Add manga</h2>
   <div id="stepSearch">
-    <input class="field" id="urlInput" type="url" inputmode="url" placeholder="Paste a mangapill.com link" autocomplete="off">
+    <input class="field" id="urlInput" type="url" inputmode="url" placeholder="mangapill.com link" autocomplete="off">
     <div class="hint">Example: https://mangapill.com/manga/1234/name</div>
   </div>
   <div id="stepConfirm" hidden>
     <div class="media"><img id="pvCover" alt=""><div><b id="pvTitle"></b><span id="pvMeta"></span></div></div>
     <div class="seg" id="seg">
-      <button data-mode="all" class="on">All chapters</button>
+      <button data-mode="all" class="on">All</button>
       <button data-mode="from">From…</button>
       <button data-mode="new">Only new</button>
     </div>
-    <div id="fromWrap"><input class="field" id="fromNum" type="number" min="0" step="any" inputmode="decimal" placeholder="Start from chapter number"></div>
+    <div id="fromWrap"><input class="field" id="fromNum" type="number" min="0" step="any" inputmode="decimal" placeholder="Start from chapter"></div>
     <div class="hint" id="modeHint">Downloads everything available.</div>
   </div>
   <div class="err" id="addErr"></div>
   <div class="stack">
     <button class="btn" id="addGo"><span class="spin"></span><span id="addGoLabel">Search</span></button>
-    <button class="btn ghost" id="addCancel">Cancel</button>
+    <button class="btn text" id="addCancel">Cancel</button>
   </div>
 </div></dialog>
 
-<dialog id="detailDlg"><div class="sheet">
+<dialog id="dlDlg"><div class="sheet">
   <div class="grab"></div>
-  <div class="media"><div id="dCoverWrap"></div><div><b id="dTitle"></b><span id="dMeta"></span></div></div>
-  <div class="hint">Removing deletes the list entry, the EPUBs and the Mihon copy.</div>
-  <div class="err" id="delErr"></div>
-  <div class="stack">
-    <button class="btn danger" id="delGo"><span class="spin"></span><span id="delLabel">Remove manga</span></button>
-    <button class="btn ghost" id="detailClose">Close</button>
-  </div>
+  <h2>Downloads</h2>
+  <div class="dl" id="dlList"></div>
+  <div class="stack"><button class="btn text" id="dlClose">Close</button></div>
 </div></dialog>
+
+<dialog id="newDlg"><div class="nw">
+  <h2 id="nwTitle">New chapters</h2>
+  <p id="nwSub"></p>
+  <div class="covers" id="nwCovers"></div>
+  <button class="btn" id="nwGo">Got it</button>
+</div></dialog>
+
+<dialog id="histDlg" class="screen">
+  <div class="appbar">
+    <button class="icon" id="histClose" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+    <h2>Read history</h2>
+  </div>
+  <div class="recbar">Mangas you already read shape your suggestions. <b>Dropped</b> ones never show up, and anything too similar to them ranks lower.</div>
+  <label class="hsearch"><input class="field" id="histQ" type="search" placeholder="Search a manga you read" autocomplete="off"></label>
+  <div id="histRes"></div>
+  <div class="hsec" id="histTitle">Read</div>
+  <div id="histList"></div>
+</dialog>
+
+<dialog id="detailDlg" class="screen">
+  <div class="appbar clear">
+    <button class="icon" id="detailClose" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+  </div>
+  <div class="hero">
+    <div class="bg" id="dBg"></div>
+    <div class="media"><div id="dCoverWrap"></div><div><b id="dTitle"></b><div class="chips" id="dMeta"></div></div></div>
+  </div>
+  <div class="body">
+    <div class="pace" id="dPace"></div>
+    <div class="err" id="dErr"></div>
+    <div class="stack">
+      <button class="btn" id="dRead"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg><span id="dReadLabel">Read</span></button>
+      <div class="acts2">
+        <button class="btn tonal" id="chaptersBtn"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Chapters</button>
+        <button class="btn tonal" id="dQueue"><svg viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4z"/></svg><span>Up next</span></button>
+        <button class="btn tonal" id="dPause"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg><span>Pause</span></button>
+        <button class="btn tonal" id="dDone"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Completed</span></button>
+      </div>
+      <button class="btn tonal" id="dRetry" hidden><span class="spin"></span><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>Retry now</button>
+      <div class="hint" style="margin:6px 4px 0">Removing deletes the list entry, the EPUBs and the Mihon copy.</div>
+      <div class="err" id="delErr"></div>
+      <button class="btn danger" id="delGo"><span class="spin"></span><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg><span id="delLabel">Remove manga</span></button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="chaptersDlg" class="screen">
+  <div class="appbar">
+    <button class="icon" id="chaptersClose" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+    <h2 id="chTitle">Chapters</h2>
+    <button class="icon" id="selToggle" aria-label="Select chapters"><svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M3.5 6.5l1.5 1.5 2.5-3M3.5 12.5 5 14l2.5-3M3.5 18.5 5 20l2.5-3"/></svg></button>
+  </div>
+  <div class="chbar" id="chHint" hidden>Tap to pick chapters you already read. Long-press to pick everything up to one.</div>
+  <div class="chlist" id="chList"></div>
+  <div id="selBar" hidden><span id="selCount">0 selected</span><button class="btn text" id="selAll">All</button><button class="btn" id="selGo" disabled>Mark read</button></div>
+</dialog>
+
+<dialog id="prefDlg"><div class="sheet">
+  <div class="grab"></div>
+  <h2>Preferences</h2>
+  <div class="lbl">Theme</div>
+  <div class="seg" id="themeSeg"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div>
+  <div class="set" id="notifyRow">
+    <div class="t"><b>New chapter alerts</b><small id="notifyHint">A notification when a manga you follow gets new chapters, while the app is open in the background.</small></div>
+    <button class="sw" id="notifySw" role="switch" aria-checked="false" aria-label="New chapter alerts"><i></i></button>
+  </div>
+  <div class="set" id="installRow" hidden>
+    <div class="t"><b>Install app</b><small>Add Manga Kindle to your home screen.</small></div>
+    <button class="btn tonal sm" id="installBtn">Install</button>
+  </div>
+  <div class="stack"><button class="btn text" id="prefClose">Done</button></div>
+</div></dialog>
+
+<dialog id="viewDlg"><div class="sheet">
+  <div class="grab"></div>
+  <h2>Library view</h2>
+  <div class="lbl">Sort by</div>
+  <div class="opts" id="sortOpts"></div>
+  <div class="lbl">Layout</div>
+  <div class="seg" id="denSeg" style="--n:4"><button data-v="2">Large</button><button data-v="3">Medium</button><button data-v="4">Small</button><button data-v="list">List</button></div>
+  <div class="lbl" id="genreLbl">Genre</div>
+  <div class="opts" id="genreOpts"></div>
+  <div class="stack"><button class="btn text" id="viewClose">Done</button></div>
+</div></dialog>
+
+<dialog id="reader">
+  <div class="bar"><button class="icon" id="readerClose" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button><b id="rTitle"></b><span id="rCount"></span></div>
+  <div id="pages"></div>
+  <div id="rProg"></div>
+</dialog>
 
 <div id="toast"></div>
 
@@ -153,7 +648,8 @@ dialog::backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(2px); }
 const $ = (id) => document.getElementById(id);
 const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const BOOK = '<svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 21V5M9 7h6"/></svg>';
-let mangas = [], lastJson = "", current = null, step = "search", mode = "all", armed = false;
+const CHEV = '<svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>';
+const shortName = (n) => { const m = n.match(/^Chapter\s+0*(\d+(?:\.\d+)?)/i); return m ? `Chapter ${m[1]}` : n; };
 
 async function api(path, body) {
   const res = await fetch(path, body === undefined ? {} : {
@@ -167,44 +663,613 @@ function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add
 function busy(btn, on) { btn.disabled = on; btn.classList.toggle("busy", on); }
 const coverUrl = (m) => `/cover?url=${encodeURIComponent(m.url)}`;
 
-function render() {
-  const q = $("q").value.trim().toLowerCase();
-  const list = mangas.filter((m) => m.title.toLowerCase().includes(q));
-  const total = mangas.reduce((n, m) => n + m.chapters, 0);
-  $("sub").textContent = `${mangas.length} manga${mangas.length === 1 ? "" : "s"} · ${total.toLocaleString()} chapters`;
-  $("grid").innerHTML = list.length ? list.map((m) => `
-    <button class="card" data-url="${esc(m.url)}">
-      ${m.has_cover ? `<img loading="lazy" src="${coverUrl(m)}" alt="">` : `<div class="ph"></div>`}
-      <span class="badge">${m.chapters}</span>
-      <div class="shade"><span>${esc(m.title)}</span></div>
-    </button>`).join("")
-    : `<div class="empty">${BOOK}<div>${mangas.length ? "No match." : "Your library is empty.<br>Tap “Add manga” to start."}</div></div>`;
+let dlState = { active: false, mangas: [] };
+function dlMark(m) {
+  const d = dlState.mangas.find((x) => x.url === m.url);
+  if (!d) return "";
+  if (d.status === "downloading") return '<span class="dlmark" title="Downloading"><i></i></span>';
+  if (d.status === "checking" || d.status === "waiting") return '<span class="dlmark wait" title="Queued"><i></i></span>';
+  return "";
 }
 
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+};
+let mangas = [], lastJson = "", current = null, step = "search", mode = "all", armed = false;
+let loaded = false, runInfo = null, serverNow = Date.now() / 1000, statsData = null, view = "now";
+const prefs = { theme: LS.get("mk.theme", "system"), density: LS.get("mk.density", "3"), sort: LS.get("mk.sort", "az"), filter: "all", genre: "", notify: LS.get("mk.notify", "0") === "1" };
+
+const ICON = {
+  pause: '<svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  alert: '<svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>',
+  up: '<svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg>',
+  x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  refresh: '<svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>',
+  play: '<svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg>',
+};
+
+/* small formatters */
+const ago = (ts) => {
+  const s = Math.max(0, serverNow - ts);
+  if (s < 90) return "just now";
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  const d = Math.round(s / 86400);
+  return d === 1 ? "yesterday" : d < 60 ? `${d} days ago` : `${Math.round(d / 30)} months ago`;
+};
+const span = (days) => days < 1 ? "less than a day" : days < 14 ? `about ${Math.round(days)} day${Math.round(days) === 1 ? "" : "s"}` : days < 70 ? `about ${Math.round(days / 7)} weeks` : `about ${Math.round(days / 30)} months`;
+const chNum = (file) => { const m = (file || "").match(/(\d+(?:\.\d+)?)/); return m ? String(parseFloat(m[1])) : ""; };
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+const cover = (m, cls = "") => m.has_cover ? `<img loading="lazy" ${cls} src="${coverUrl(m)}" alt="">` : '<div class="ph"></div>';
+
+/* keep horizontal scroll positions when a section is repainted */
+function keepScroll(root, fn) {
+  const pos = [...root.querySelectorAll(".hscroll")].map((e) => e.scrollLeft);
+  fn();
+  root.querySelectorAll(".hscroll").forEach((e, i) => { if (pos[i]) e.scrollLeft = pos[i]; });
+}
+
+/* ───────── theme, density, sort ───────── */
+function applyTheme() {
+  const root = document.documentElement;
+  if (prefs.theme === "light" || prefs.theme === "dark") root.dataset.theme = prefs.theme; else delete root.dataset.theme;
+  const dark = prefs.theme === "dark" || (prefs.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.querySelector("meta[name=theme-color]").content = dark ? "#111318" : "#f9f9ff";
+}
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme); } catch (e) {}
+
+/* ───────── tabs ───────── */
+const TITLES = { now: "Now", library: "Library", discover: "For you", stats: "Stats" };
+function setView(v) {
+  view = v;
+  document.querySelectorAll(".view").forEach((s) => { s.hidden = s.id !== `v-${v}`; });
+  document.querySelectorAll("#nav button").forEach((b) => b.classList.toggle("on", b.dataset.tab === v));
+  $("libTools").hidden = v !== "library"; $("fab").hidden = v !== "library"; $("histBtn").hidden = v !== "discover";
+  $("hTitle").textContent = TITLES[v];
+  window.scrollTo(0, 0);
+  LS.set("mk.tab", v);
+  clearTimeout(recTimer);
+  if (v === "discover") { $("recInfo").textContent = "Loading…"; loadRecs(); }
+  if (v === "stats" || v === "now") loadStats();
+  paintAll();
+}
+document.querySelectorAll("#nav button").forEach((b) => { b.onclick = () => (b.dataset.tab === view ? window.scrollTo({ top: 0, behavior: "smooth" }) : setView(b.dataset.tab)); });
+
+function paintSub() {
+  const n = mangas.length;
+  $("sub").textContent = view === "now" ? new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })
+    : view === "library" ? `${plural(n, "manga")} · ${plural(mangas.reduce((t, m) => t + m.chapters, 0), "unread chapter")}`
+    : view === "stats" ? (statsData && statsData.since ? `Counting since ${new Date(statsData.since * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short" })}` : "Your reading")
+    : "Picked from what you read";
+}
+function paintAll() {
+  paintSub();
+  paintNavBadge();
+  if (view === "now") paintNow(); else if (view === "library") renderLibrary(); else if (view === "stats") paintStats();
+}
+
+/* ───────── data ───────── */
 async function load(first) {
   if (first) $("grid").innerHTML = Array(9).fill('<div class="skeleton"></div>').join("");
   try {
     const data = await api("/api/mangas");
-    $("pill").classList.toggle("on", data.downloading);
+    loaded = true;
+    serverNow = data.now || serverNow; runInfo = data.run || null;
+    if (data.downloading !== dlState.active) { dlState.active = data.downloading; pollStatus(); }
+    $("pill").classList.toggle("on", data.downloading || dlState.active);
     const json = JSON.stringify(data.mangas);
-    if (json !== lastJson) { lastJson = json; mangas = data.mangas; render(); }
+    if (json !== lastJson) { lastJson = json; mangas = data.mangas; paintAll(); if (current) current = mangas.find((m) => m.url === current.url) || current; if (view === "now") loadStats(); }
   } catch (e) { if (first) toast(e.message); }
 }
+let statsBusy = false;
+async function loadStats() {
+  if (statsBusy) return; statsBusy = true;
+  try { statsData = await api("/api/stats"); if (view === "stats" || view === "now") paintAll(); } catch (e) {} finally { statsBusy = false; }
+}
 
-$("q").addEventListener("input", render);
-
-/* detail / remove */
-function resetDel() { armed = false; $("delGo").classList.remove("armed"); $("delLabel").textContent = "Remove manga"; }
-$("grid").addEventListener("click", (e) => {
-  const card = e.target.closest(".card"); if (!card) return;
-  current = mangas.find((m) => m.url === card.dataset.url); if (!current) return;
-  $("dCoverWrap").innerHTML = current.has_cover ? `<img src="${coverUrl(current)}" alt="">` : '<div class="ph"></div>';
-  $("dTitle").textContent = current.title;
-  $("dMeta").textContent = `${current.chapters} chapters downloaded`;
-  resetDel(); $("delErr").textContent = "";
-  $("detailDlg").showModal();
+/* ───────── library ───────── */
+const FILTERS = [["all", "All"], ["unread", "Unread"], ["caught", "Caught up"], ["queue", "Up next"], ["paused", "Paused"], ["done", "Completed"]];
+const inFilter = (m, f) => ({
+  all: true, unread: m.chapters > 0, caught: m.chapters === 0 && !m.paused && !m.completed,
+  queue: m.queue >= 0, paused: m.paused, done: m.completed,
+}[f]);
+const SORTS = {
+  az: ["A–Z", (a, b) => a.title.localeCompare(b.title)],
+  most: ["Most unread", (a, b) => b.chapters - a.chapters || a.title.localeCompare(b.title)],
+  least: ["Closest to done", (a, b) => (a.chapters || 1e9) - (b.chapters || 1e9) || a.title.localeCompare(b.title)],
+  updated: ["Recently updated", (a, b) => (b.last_new || 0) - (a.last_new || 0) || a.title.localeCompare(b.title)],
+  read: ["Recently read", (a, b) => (b.last_read || 0) - (a.last_read || 0) || a.title.localeCompare(b.title)],
+};
+function stateMark(m) {
+  const d = dlMark(m); if (d) return d;
+  if (m.error) return `<span class="stm err" title="${esc(m.error)}">!</span>`;
+  if (m.paused) return `<span class="stm" title="Paused">${ICON.pause}</span>`;
+  if (m.completed) return `<span class="stm ok" title="Completed">${ICON.check}</span>`;
+  if (m.queue >= 0) return `<span class="stm q" title="Up next">${m.queue + 1}</span>`;
+  return "";
+}
+function subline(m) {
+  const bits = [m.chapters ? `${m.chapters} unread` : "Caught up"];
+  if (m.chapters && m.eta_days) bits.push(`~${span(m.eta_days).replace("about ", "")}`);
+  if (m.status) bits.push(m.status);
+  return bits.join(" · ");
+}
+function renderLibrary() {
+  const q = $("q").value.trim().toLowerCase();
+  const g = $("grid");
+  g.dataset.d = prefs.density;
+  const list = mangas.filter((m) => m.title.toLowerCase().includes(q) && inFilter(m, prefs.filter) && (!prefs.genre || m.genres.includes(prefs.genre)))
+    .sort((SORTS[prefs.sort] || SORTS.az)[1]);
+  $("filterChips").innerHTML = FILTERS.map(([k, label]) => {
+    const n = mangas.filter((m) => inFilter(m, k)).length;
+    return k !== "all" && !n && prefs.filter !== k ? "" : `<button class="fc${prefs.filter === k ? " on" : ""}" data-f="${k}">${label}<b>${n}</b></button>`;
+  }).join("") + (prefs.genre ? `<button class="fc on" data-clear-genre>${esc(prefs.genre)} ✕</button>` : "");
+  if (!list.length) {
+    g.innerHTML = `<div class="empty">${BOOK}${mangas.length ? "<b>Nothing here</b>Try another search or filter." : "<b>Your library is empty</b>Tap “Add manga” to start."}</div>`;
+    return;
+  }
+  g.innerHTML = prefs.density === "list"
+    ? list.map((m) => `<button class="lrow${m.paused || m.completed ? " dim" : ""}" data-url="${esc(m.url)}">${cover(m)}
+        <div class="t"><b>${esc(m.title)}</b><small>${esc(subline(m))}</small></div>${stateMark(m)}<span class="badge${m.chapters ? "" : " zero"}">${m.chapters}</span></button>`).join("")
+    : list.map((m) => `
+    <button class="card${m.paused || m.completed ? " dim" : ""}" data-url="${esc(m.url)}">
+      ${cover(m)}
+      <span class="badge${m.chapters ? "" : " zero"}">${m.chapters}</span>${stateMark(m)}
+      <div class="shade"><span>${esc(m.title)}</span></div>
+    </button>`).join("");
+}
+$("filterChips").addEventListener("click", (e) => {
+  if (e.target.closest("[data-clear-genre]")) { prefs.genre = ""; return renderLibrary(); }
+  const b = e.target.closest("[data-f]"); if (!b) return;
+  prefs.filter = b.dataset.f; renderLibrary();
 });
+
+/* view options sheet */
+function paintViewSheet() {
+  $("sortOpts").innerHTML = Object.entries(SORTS).map(([k, [label]]) => `<button class="fc${prefs.sort === k ? " on" : ""}" data-sort="${k}">${label}</button>`).join("");
+  document.querySelectorAll("#denSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === prefs.density));
+  const counts = {};
+  mangas.forEach((m) => m.genres.forEach((x) => { counts[x] = (counts[x] || 0) + 1; }));
+  const genres = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  $("genreLbl").hidden = $("genreOpts").hidden = !genres.length;
+  $("genreOpts").innerHTML = genres.map(([x, n]) => `<button class="fc${prefs.genre === x ? " on" : ""}" data-genre="${esc(x)}">${esc(x)}<b>${n}</b></button>`).join("");
+}
+$("viewBtn").onclick = () => { paintViewSheet(); $("viewDlg").showModal(); };
+$("viewClose").onclick = () => $("viewDlg").close();
+$("viewDlg").addEventListener("click", (e) => {
+  if (e.target === $("viewDlg")) return $("viewDlg").close();
+  const s = e.target.closest("[data-sort]"), d = e.target.closest("#denSeg button"), g = e.target.closest("[data-genre]");
+  if (s) { prefs.sort = s.dataset.sort; LS.set("mk.sort", prefs.sort); }
+  else if (d) { prefs.density = d.dataset.v; LS.set("mk.density", prefs.density); }
+  else if (g) { prefs.genre = prefs.genre === g.dataset.genre ? "" : g.dataset.genre; }
+  else return;
+  paintViewSheet(); renderLibrary();
+});
+
+/* ───────── Now ───────── */
+function summary() {
+  const act = mangas.filter((m) => !m.paused);
+  const backlog = act.reduce((n, m) => n + m.chapters, 0);
+  const read = mangas.reduce((n, m) => n + m.read_rate, 0);
+  const rel = act.filter((m) => !m.completed).reduce((n, m) => n + m.release_rate, 0);
+  const net = read - rel;
+  return { backlog, withUnread: act.filter((m) => m.chapters > 0).length, read, eta: backlog === 0 ? 0 : net > 0.02 ? backlog / net : null };
+}
+function alertsList() {
+  const out = mangas.filter((m) => m.error && !m.paused).map((m) => ({ kind: "err", m, title: m.title, text: m.error }));
+  if (runInfo && serverNow - runInfo.ts > 36 * 3600) out.push({ kind: "stale", title: "Daily check is late", text: `No full check since ${ago(runInfo.ts)}` });
+  return out;
+}
+function paintNavBadge() {
+  const n = alertsList().length;
+  $("navBadge").hidden = !n; $("navBadge").textContent = n;
+}
+const lastRead = (a, b) => (b.last_read || 0) - (a.last_read || 0);
+function miniCard(m, { tag, sub, bar, wide, t2 } = {}) {
+  return `<button class="mini${wide ? " wide" : ""}" data-open="${esc(m.url)}"${wide ? ` data-go="${esc(m.url)}"` : ""}>
+    <div class="im">${cover(m)}${tag ? `<span class="tag${t2 ? " t2" : ""}">${tag}</span>` : ""}${bar != null ? `<div class="pb"><i style="width:${bar}%"></i></div>` : ""}</div>
+    <b>${esc(m.title)}</b><small>${esc(sub || "")}</small></button>`;
+}
+function paintNow() {
+  if (!loaded) { $("nowBody").innerHTML = '<div class="sum" style="opacity:.5;min-height:150px"></div>'; return; }
+  if (!mangas.length) { $("nowBody").innerHTML = `<div class="empty">${BOOK}<b>Your library is empty</b>Open Library and add your first manga.</div>`; return; }
+  const s = summary(), st = statsData;
+  const last7 = st ? st.days.slice(-7) : [];
+  const max7 = Math.max(1, ...last7.map((d) => d.n));
+  const paceTxt = s.read > 0 ? `You read about ${s.read >= 1 ? s.read.toFixed(1) : s.read.toFixed(2)} chapters a day.` : "Read a few chapters and your pace shows up here.";
+  const etaTxt = s.backlog === 0 ? "You're all caught up." : s.eta == null ? (s.read > 0 ? "New chapters arrive about as fast as you read them." : "") : `At this pace you clear it in ${span(s.eta)}.`;
+  const dayLabels = last7.map((d) => new Date(d.d + "T12:00").toLocaleDateString(undefined, { weekday: "narrow" }));
+  const checking = dlState.active;
+  let h = `<div class="sum">
+    <div class="big"><b>${s.backlog.toLocaleString()}</b><span>${s.backlog === 1 ? "chapter" : "chapters"} to read${s.withUnread ? ` in ${plural(s.withUnread, "manga")}` : ""}</span></div>
+    <p>${esc(paceTxt)} ${esc(etaTxt)}</p>
+    <div class="row2">
+      <div><div class="spark">${last7.map((d, i) => `<i class="${d.n ? "hit" : ""}${i === 6 ? " today" : ""}" style="height:${d.n ? Math.max(14, (d.n / max7) * 100) : 10}%" title="${d.n} read"></i>`).join("")}</div><div class="lab">${dayLabels.map((l) => `<span>${l}</span>`).join("")}</div></div>
+      <button class="btn" id="checkNow"${checking ? " disabled" : ""}>${ICON.refresh}${checking ? "Checking…" : "Check now"}</button>
+    </div></div>`;
+  const al = alertsList();
+  if (al.length) {
+    h += `<div class="alerts">${al.map((a) => `<div class="alert${a.kind === "stale" ? " warn" : ""}">${ICON.alert}<div class="t"><b>${esc(a.title)}</b><small>${esc(a.text)}</small></div>
+      <button ${a.m ? `data-retry="${esc(a.m.url)}"` : "data-checkall"}>${a.m ? "Retry" : "Check"}</button></div>`).join("")}</div>`;
+  }
+  const started = mangas.filter((m) => m.started && !m.paused).sort(lastRead).slice(0, 12);
+  let cont = started;
+  let contTitle = "Continue reading";
+  if (!cont.length) {
+    contTitle = "Start reading";
+    cont = mangas.filter((m) => m.chapters > 0 && !m.paused).sort((a, b) => (a.queue < 0) - (b.queue < 0) || a.queue - b.queue || a.chapters - b.chapters).slice(0, 12);
+  }
+  if (cont.length) {
+    h += `<div class="sh"><h3>${contTitle}</h3><small>${plural(cont.length, "manga")}</small></div><div class="hscroll">${cont.map((m) => {
+      const f = m.started ? m.started.file : m.next;
+      return miniCard(m, {
+        wide: true, tag: m.started ? "" : "", bar: m.started ? ((m.started.page + 1) / m.started.total) * 100 : 0,
+        sub: `Ch. ${chNum(f)}${m.started ? ` · p. ${m.started.page + 1}/${m.started.total}` : ""}`,
+      });
+    }).join("")}</div>`;
+  }
+  const queue = mangas.filter((m) => m.queue >= 0).sort((a, b) => a.queue - b.queue);
+  h += `<div class="sh"><h3>Up next</h3><small>${queue.length ? `${queue.length} pinned` : ""}</small></div>`;
+  h += queue.length
+    ? `<div class="qlist">${queue.map((m, i) => `<div class="qrow"><button class="go" data-go="${esc(m.url)}"><span class="n">${i + 1}</span>${cover(m)}
+        <div class="t"><b>${esc(m.title)}</b><small>${esc(subline(m))}</small></div></button>
+        ${i ? `<button class="icon" data-qtop="${esc(m.url)}" aria-label="Move up">${ICON.up}</button>` : ""}
+        <button class="icon" data-qrm="${esc(m.url)}" aria-label="Remove from Up next">${ICON.x}</button></div>`).join("")}</div>`
+    : `<div class="hintcard"><b>Pin what you want to read first.</b><br>Open any manga and tap “Up next”. Pinned mangas show up here in order and get checked for new chapters first.</div>`;
+  const fresh = mangas.filter((m) => m.new_7d > 0 && !m.paused).sort((a, b) => b.last_new - a.last_new).slice(0, 12);
+  if (fresh.length) {
+    h += `<div class="sh"><h3>New this week</h3><small>${plural(fresh.reduce((n, m) => n + m.new_7d, 0), "chapter")}</small></div><div class="hscroll">${fresh.map((m) =>
+      miniCard(m, { tag: `+${m.new_7d}`, sub: ago(m.last_new) })).join("")}</div>`;
+  }
+  const shown = new Set(cont.map((m) => m.url));
+  const near = mangas.filter((m) => m.chapters > 0 && m.chapters <= 5 && !m.paused && !shown.has(m.url)).sort((a, b) => a.chapters - b.chapters).slice(0, 12);
+  if (near.length) {
+    h += `<div class="sh"><h3>Almost done</h3><small>5 or fewer left</small></div><div class="hscroll">${near.map((m) =>
+      miniCard(m, { tag: `${m.chapters} left`, t2: true, sub: m.eta_days ? `~${span(m.eta_days).replace("about ", "")}` : m.status })).join("")}</div>`;
+  }
+  keepScroll($("nowBody"), () => { $("nowBody").innerHTML = h; });
+}
+$("nowBody").addEventListener("click", async (e) => {
+  const go = e.target.closest("[data-go]"), open = e.target.closest("[data-open]"), top = e.target.closest("[data-qtop]"), rm = e.target.closest("[data-qrm]"), retry = e.target.closest("[data-retry]");
+  if (e.target.closest("#checkNow") || e.target.closest("[data-checkall]")) {
+    try { await api("/api/check", {}); toast("Checking for new chapters…"); dlState.active = true; $("pill").classList.add("on"); pollStatus(); paintNow(); } catch (err) { toast(err.message); }
+  } else if (retry) {
+    try { await api("/api/manga/retry", { url: retry.dataset.retry }); toast("Retrying…"); dlState.active = true; $("pill").classList.add("on"); pollStatus(); } catch (err) { toast(err.message); }
+  } else if (top || rm) {
+    try { await api("/api/manga/queue", { url: (top || rm).dataset.qtop || (top || rm).dataset.qrm, action: top ? "up" : "remove" }); lastJson = ""; load(); } catch (err) { toast(err.message); }
+  } else if (go) {
+    continueReading(go.dataset.go);
+  } else if (open) {
+    openDetail(open.dataset.open);
+  }
+});
+
+/* ───────── Stats ───────── */
+function paintStats() {
+  const s = statsData;
+  if (!s) { $("statsBody").innerHTML = '<div class="tiles">' + Array(3).fill('<div class="tile"><b>&nbsp;</b><small>&nbsp;</small></div>').join("") + "</div>"; return; }
+  const mixCounts = [
+    ["Unread", "var(--primary)", mangas.filter((m) => m.chapters > 0 && !m.paused && !m.completed).length],
+    ["Caught up", "var(--ok)", mangas.filter((m) => m.chapters === 0 && !m.paused && !m.completed).length],
+    ["Paused", "var(--outline)", mangas.filter((m) => m.paused).length],
+    ["Completed", "var(--tertiary-c)", mangas.filter((m) => m.completed).length],
+  ];
+  const delta = s.this_week - s.last_week;
+  let h = `<div class="tiles">
+    <div class="tile hl"><b>${s.streak}</b><small>${s.streak === 1 ? "day" : "days"} in a row${s.best_streak > s.streak ? ` · best ${s.best_streak}` : ""}</small></div>
+    <div class="tile"><b>${s.this_week}</b><small>this week${s.last_week ? ` (${delta >= 0 ? "+" : ""}${delta})` : ""}</small></div>
+    <div class="tile"><b>${s.total.toLocaleString()}</b><small>chapters read</small></div></div>`;
+  if (!s.total) {
+    h += `<div class="panel"><div class="note" style="padding:28px 8px"><b>No reading yet</b>Read a chapter in the app, or in Mihon, and your streak, weekly pace and favourites show up here.</div></div>`;
+  } else {
+    const first = new Date(s.days[0].d + "T12:00");
+    const padN = (first.getDay() + 6) % 7; // Monday first
+    const lvl = (n) => (n >= 7 ? 4 : n >= 4 ? 3 : n >= 2 ? 2 : n >= 1 ? 1 : 0);
+    h += `<div class="panel"><h4>Last 12 weeks<small>${plural(s.active_days, "active day")}</small></h4>
+      <div class="heat">${'<i class="pad0"></i>'.repeat(padN)}${s.days.map((d, i) => `<i class="l${lvl(d.n)}${i === s.days.length - 1 ? " today" : ""}" title="${d.d}: ${d.n}"></i>`).join("")}</div>
+      <div class="legend">Less <i></i><i class="l1" style="background:color-mix(in srgb,var(--primary) 30%,var(--c-high))"></i><i style="background:color-mix(in srgb,var(--primary) 55%,var(--c-high))"></i><i style="background:color-mix(in srgb,var(--primary) 80%,var(--c-high))"></i><i style="background:var(--primary)"></i> More</div></div>`;
+    const wmax = Math.max(1, ...s.weeks);
+    h += `<div class="panel"><h4>Per week<small>last 8 weeks</small></h4><div class="wbars">${s.weeks.map((n) => `<div><span>${n || ""}</span><i style="height:${Math.max(3, (n / wmax) * 72)}px"></i></div>`).join("")}</div></div>`;
+    if (s.top.length) {
+      const tmax = s.top[0].n;
+      h += `<div class="panel"><h4>Most read<small>last 30 days</small></h4>${s.top.map((t) => `<div class="toprow">${t.has_cover ? `<img src="/cover?title=${encodeURIComponent(t.title)}" alt="">` : '<div class="ph"></div>'}<div class="t"><b>${esc(t.title)}</b><i style="width:${(t.n / tmax) * 100}%"></i></div><span>${t.n}</span></div>`).join("")}</div>`;
+    }
+  }
+  h += `<div class="panel"><h4>Library<small>${plural(mangas.length, "manga")}</small></h4>
+    <div class="mix">${mixCounts.filter((c) => c[2]).map(([, color, n]) => `<i style="flex:${n};background:${color}"></i>`).join("")}</div>
+    <div class="mixl">${mixCounts.map(([label, color, n]) => `<div><i style="background:${color}"></i>${label}<b>${n}</b></div>`).join("")}</div></div>`;
+  const done = mangas.filter((m) => m.completed);
+  if (done.length) h += `<div class="sh"><h3>Completed</h3><small>${done.length}</small></div><div class="hscroll">${done.map((m) => miniCard(m, { tag: "✓", t2: true, sub: m.status === "finished" ? "Finished" : "Done" })).join("")}</div>`;
+  h += `<div class="foot">${s.since ? `Counting since ${new Date(s.since * 1000).toLocaleDateString(undefined, { day: "numeric", month: "long" })}. ` : ""}Chapters count when you finish them in the app or Mihon.</div>`;
+  keepScroll($("statsBody"), () => { $("statsBody").innerHTML = h; });
+}
+$("statsBody").addEventListener("click", (e) => { const b = e.target.closest("[data-open]"); if (b) openDetail(b.dataset.open); });
+
+/* ───────── preferences ───────── */
+let installEvt = null;
+const canNotify = "Notification" in window && "serviceWorker" in navigator;
+function paintPrefs() {
+  document.querySelectorAll("#themeSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === prefs.theme));
+  $("notifyRow").hidden = !canNotify;
+  $("notifySw").setAttribute("aria-checked", String(prefs.notify && Notification.permission === "granted"));
+  $("installRow").hidden = !installEvt;
+}
+$("prefBtn").onclick = () => { paintPrefs(); $("prefDlg").showModal(); };
+$("prefClose").onclick = () => $("prefDlg").close();
+$("prefDlg").addEventListener("click", (e) => { if (e.target === $("prefDlg")) $("prefDlg").close(); });
+$("themeSeg").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  prefs.theme = b.dataset.v; LS.set("mk.theme", prefs.theme); applyTheme(); paintPrefs();
+});
+$("notifySw").onclick = async () => {
+  if (!canNotify) return;
+  if (prefs.notify && Notification.permission === "granted") { prefs.notify = false; LS.set("mk.notify", "0"); return paintPrefs(); }
+  const p = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+  if (p !== "granted") { toast("Notifications are blocked for this site"); return paintPrefs(); }
+  prefs.notify = true; LS.set("mk.notify", "1"); LS.set("mk.notified", String(serverNow));
+  paintPrefs(); toast("You'll get an alert for new chapters");
+};
+addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; });
+$("installBtn").onclick = async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice.catch(() => {}); installEvt = null; paintPrefs(); };
+async function notifyPoll() {
+  if (!prefs.notify || !canNotify || Notification.permission !== "granted" || !document.hidden) return;
+  try {
+    const since = parseFloat(LS.get("mk.notified", "0")) || 0;
+    const { now, updates } = await api(`/api/updates?since=${since}`);
+    if (!updates.length) return;
+    LS.set("mk.notified", String(now));
+    const total = updates.reduce((n, u) => n + u.chapters.length, 0);
+    const reg = await navigator.serviceWorker.ready;
+    reg.showNotification(updates.length === 1 ? updates[0].title : `${updates.length} mangas have news`, {
+      body: updates.length === 1 ? `${plural(total, "new chapter")}: ${updates[0].chapters[0]}${total > 1 ? ` – ${updates[0].chapters[total - 1]}` : ""}` : `${plural(total, "new chapter")}: ${updates.slice(0, 3).map((u) => u.title).join(", ")}`,
+      icon: "/icon-192.png", badge: "/icon-192.png", tag: "mk-new",
+    });
+  } catch (e) {}
+}
+setInterval(notifyPoll, 60000);
+
+/* download visibility: live status while a download runs */
+let statusTimer = null;
+const chLabel = (c) => (c === "" || c == null ? "" : `Ch. ${c}`);
+function paintStatus() {
+  const act = dlState.mangas.filter((m) => m.status === "downloading");
+  const doneCh = dlState.mangas.reduce((n, m) => n + m.done_ch, 0), totalCh = dlState.mangas.reduce((n, m) => n + m.total_ch, 0);
+  $("pillTxt").textContent = totalCh ? `${doneCh}/${totalCh}` : "Downloading";
+  if ($("dlDlg").open) {
+    $("dlList").innerHTML = dlState.mangas.length ? dlState.mangas.map((m) => {
+      const known = m.total_ch > 0;
+      const pct = known ? Math.min(100, ((m.done_ch + (m.total_img ? m.done_img / m.total_img : 0) * (m.status === "downloading" ? 1 : 0)) / m.total_ch) * 100) : 0;
+      const detail = m.status === "downloading"
+        ? `${chLabel(m.chapter)}${m.total_img ? ` · page ${m.done_img}/${m.total_img}` : ""}${known ? ` · ${m.done_ch}/${m.total_ch} chapters` : ""}`
+        : m.status === "checking" ? "Checking for new chapters…" : m.status === "waiting" ? "Queued"
+        : m.status === "error" ? "Failed, will retry next run" : known ? `${m.done_ch} chapter${m.done_ch === 1 ? "" : "s"} downloaded` : "Up to date";
+      const st = m.status === "done" ? '<span class="state ok">Done</span>' : m.status === "error" ? '<span class="state bad">Error</span>' : "";
+      const lib = mangas.find((x) => x.url === m.url);
+      return `<div class="row">${lib && lib.has_cover ? `<img src="${coverUrl(m)}" alt="">` : '<div class="ph"></div>'}
+        <div class="t"><b>${esc(m.title)}</b><small>${esc(detail)}</small>${m.status === "downloading" || m.status === "checking" ? `<div class="bar${known ? "" : " ind"}"><i style="width:${known ? pct : 35}%"></i></div>` : ""}</div>${st}</div>`;
+    }).join("") : '<div class="hint" style="margin:8px 0">Nothing is downloading right now.</div>';
+  }
+}
+let statusSig = "";
+function repaintForStatus() {  // only repaint the lists when a manga changed state, not on every progress tick
+  const sig = JSON.stringify(dlState.mangas.map((m) => [m.url, m.status])) + dlState.active;
+  if (sig !== statusSig) { statusSig = sig; paintAll(); }
+}
+async function pollStatus() {
+  clearTimeout(statusTimer);
+  if (!dlState.active && !$("dlDlg").open) { if (dlState.mangas.length) { dlState.mangas = []; statusSig = ""; paintAll(); } return; }
+  try {
+    const d = await api("/api/status");
+    const wasActive = dlState.active;
+    dlState = d;
+    $("pill").classList.toggle("on", d.active);
+    if (wasActive && !d.active) { lastJson = ""; load(); }
+    paintStatus(); repaintForStatus();
+  } catch (e) {}
+  statusTimer = setTimeout(pollStatus, 1500);
+}
+$("pill").onclick = () => { $("dlDlg").showModal(); paintStatus(); pollStatus(); };
+$("dlClose").onclick = () => $("dlDlg").close();
+$("dlDlg").addEventListener("close", pollStatus);
+
+/* recommendations: built from the mangas you keep up with (the ones with a backlog are ignored) */
+let recs = [], recTimer = null, lastRecs = null, recGenre = "", recShown = 8;
+function paintRecs(d) {
+  const parts = [];
+  if (d.library) parts.push(`${d.library} manga${d.library === 1 ? "" : "s"} you keep up with`);
+  if (d.history) parts.push(`${d.history} you marked as read`);
+  const dropNote = d.dropped ? ` · avoiding ${d.dropped} dropped` : "";
+  const info = parts.length
+    ? `Based on ${parts.join(" and ")}${d.taste.length ? ` · you like ${d.taste.slice(0, 3).join(", ")}` : ""}${dropNote}`
+    : "Read a few chapters of your mangas, or add your read history, and suggestions will show up here.";
+  $("recInfo").textContent = d.building && !d.items.length ? "Finding manga for you… the first time takes a minute." : info;
+  recs = d.items; lastRecs = d;
+  const gs = {};
+  d.items.forEach((r) => [...r.shared, ...r.genres].forEach((g) => { gs[g] = (gs[g] || 0) + 1; }));
+  const topG = Object.entries(gs).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  $("recChips").innerHTML = d.items.length ? `<button class="fc${recGenre ? "" : " on"}" data-g="">All</button>` + topG.map(([g, n]) => `<button class="fc${recGenre === g ? " on" : ""}" data-g="${esc(g)}">${esc(g)}<b>${n}</b></button>`).join("") : "";
+  const filtered = d.items.map((r, i) => [r, i]).filter(([r]) => !recGenre || r.shared.includes(recGenre) || r.genres.includes(recGenre));
+  const vis = filtered.slice(0, recShown), more = filtered.length > recShown;
+  const EXT = '<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  const CHK = '<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>', BAN = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/></svg>', PLUS = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+  $("recList").innerHTML = vis.length ? vis.map(([r, i]) => `
+    <article class="rec" style="--i:${Math.min(i, 8)}">
+      <div class="top2">
+        <div class="cv"><img loading="lazy" src="${esc(r.cover)}" alt=""><span class="match">${r.match}%</span></div>
+        <div class="t">
+          <div class="name"><b>${esc(r.title)}</b><a href="${esc(r.url)}" target="_blank" rel="noopener" aria-label="Open on AniList">${EXT}</a></div>
+          <div class="why">Because you read <em>${r.because.map(esc).join("</em> and <em>")}</em></div>
+          <div class="chips">${[...r.shared, ...r.genres.filter((g) => !r.shared.includes(g))].slice(0, 3).map((g) => `<span>${esc(g)}</span>`).join("")}</div>
+        </div>
+      </div>
+      <div class="acts">
+        <button class="btn main" data-i="${i}">${PLUS}Add</button>
+        <button class="btn ghost" data-read="${i}">${CHK}Read</button>
+        <button class="btn ghost" data-drop="${i}">${BAN}Dropped</button>
+      </div>
+    </article>`).join("") + (more ? `<button class="btn tonal morebtn" id="recMore">Show more</button>` : "")
+    : (d.building ? Array(4).fill('<div class="rec skel"></div>').join("")
+      : d.error ? '<div class="note"><b>Could not reach AniList</b>Check your connection and try again later.</div>'
+      : '<div class="note"><b>No suggestions yet</b>Keep reading, or add mangas you already read in the history.</div>');
+}
+async function loadRecs() {
+  clearTimeout(recTimer);
+  try {
+    const d = await api("/api/recommendations");
+    if (view !== "discover") return;
+    paintRecs(d);
+    if (d.building) recTimer = setTimeout(loadRecs, 3000);
+  } catch (e) { $("recInfo").textContent = e.message; }
+}
+$("recChips").addEventListener("click", (e) => { const b = e.target.closest("[data-g]"); if (!b || !lastRecs) return; recGenre = b.dataset.g; recShown = 8; paintRecs(lastRecs); });
+$("recList").addEventListener("click", async (e) => {
+  if (e.target.closest("#recMore")) { recShown += 8; return paintRecs(lastRecs); }
+  const why = e.target.closest(".why"); if (why) { why.classList.toggle("open"); return; }
+  const rd = e.target.closest("button[data-read], button[data-drop]");
+  if (rd) {
+    const drop = "drop" in rd.dataset, r = recs[+(drop ? rd.dataset.drop : rd.dataset.read)]; busy(rd, true);
+    try {
+      await api("/api/history/add", { id: r.id, status: drop ? "dropped" : "read" });
+      rd.closest(".rec").remove(); toast(drop ? "Dropped, fewer like this from now on…" : "Marked as read, updating suggestions…");
+      $("recInfo").textContent = "Updating suggestions…"; recTimer = setTimeout(loadRecs, 800);
+    } catch (err) { toast(err.message); busy(rd, false); }
+    return;
+  }
+  const b = e.target.closest("button[data-i]"); if (!b) return;
+  const r = recs[+b.dataset.i]; busy(b, true);
+  try {
+    const { url } = await api("/api/recommend/resolve", { names: [r.title, r.alt, ...r.names].filter(Boolean) });
+    resetAdd(); $("urlInput").value = url; $("addDlg").showModal(); $("addGo").click();
+  } catch (err) { toast(err.message); }
+  busy(b, false);
+});
+
+/* read history */
+let histTimer = null;
+const histRow = (h, btn) => `<div class="hrow">${h.cover ? `<img loading="lazy" src="${esc(h.cover)}" alt="">` : '<div class="ph"></div>'}<div class="t"><b>${esc(h.title)}</b><small>${esc((h.genres || []).slice(0, 3).join(" · "))}</small></div><div class="btns">${btn}</div></div>`;
+async function loadHist() {
+  try {
+    const { items } = await api("/api/history");
+    const rm = (h) => histRow(h, `<button class="btn ghost" data-rm="${h.id}">Remove</button>`);
+    const read = items.filter((h) => h.status !== "dropped"), drop = items.filter((h) => h.status === "dropped");
+    $("histTitle").innerHTML = `Read${read.length ? ` <i>${read.length}</i>` : ""}`;
+    $("histList").innerHTML = (read.length ? read.map(rm).join("") : '<div class="hint" style="margin:8px 20px">Nothing yet. Search above, or tap “Already read” on a suggestion.</div>')
+      + `<div class="hsec">Dropped${drop.length ? ` <i>${drop.length}</i>` : ""}</div>`
+      + (drop.length ? drop.map(rm).join("") : '<div class="hint" style="margin:8px 20px">Dropped mangas are never suggested, and similar ones rank lower.</div>');
+  } catch (e) { toast(e.message); }
+}
+$("histBtn").onclick = () => { $("histQ").value = ""; $("histRes").innerHTML = ""; $("histDlg").showModal(); loadHist(); };
+$("histClose").onclick = () => { $("histDlg").close(); if (view === "discover") { $("recInfo").textContent = "Updating suggestions…"; loadRecs(); } };
+$("histQ").addEventListener("input", () => {
+  clearTimeout(histTimer);
+  const q = $("histQ").value.trim();
+  if (q.length < 2) { $("histRes").innerHTML = ""; return; }
+  histTimer = setTimeout(async () => {
+    try {
+      const { items } = await api(`/api/history/search?q=${encodeURIComponent(q)}`);
+      if ($("histQ").value.trim() !== q) return;
+      $("histRes").innerHTML = items.length ? items.map((h) => histRow(h, `<button class="btn tonal" data-add="${h.id}">Read</button><button class="btn ghost" data-add="${h.id}" data-st="dropped">Dropped</button>`)).join("") : '<div class="hint" style="margin:8px 20px">No results.</div>';
+    } catch (e) { $("histRes").innerHTML = `<div class="hint" style="margin:8px 20px">${esc(e.message)}</div>`; }
+  }, 400);
+});
+$("histDlg").addEventListener("click", async (e) => {
+  const a = e.target.closest("button[data-add]"), r = e.target.closest("button[data-rm]");
+  const b = a || r; if (!b) return;
+  busy(b, true);
+  try {
+    await api(a ? "/api/history/add" : "/api/history/remove", { id: +(a ? a.dataset.add : r.dataset.rm), status: a && a.dataset.st });
+    if (a) { b.closest(".hrow").remove(); toast(a.dataset.st ? "Added to dropped" : "Added to your read history"); }
+    loadHist();
+  } catch (err) { toast(err.message); busy(b, false); }
+});
+
+/* "what's new" popup: mangas that got chapters since the app was last opened */
+const SEEN_KEY = "mk.lastSeen";
+const lsGet = () => { try { return parseFloat(localStorage.getItem(SEEN_KEY)) || 0; } catch (e) { return 0; } };
+const lsSet = (v) => { try { localStorage.setItem(SEEN_KEY, String(v)); } catch (e) {} };
+let checkingNew = false, lastCheck = 0;
+async function checkNew() {
+  if (checkingNew || $("newDlg").open || Date.now() - lastCheck < 3000) return;
+  checkingNew = true; lastCheck = Date.now();
+  try {
+    const since = lsGet();
+    const { now, updates } = await api(`/api/updates?since=${since}`);
+    if (!since) { lsSet(now); return; } // first run: nothing to compare with
+    if (!updates.length) { lsSet(now); return; }
+    const total = updates.reduce((n, u) => n + u.chapters.length, 0);
+    $("nwTitle").textContent = updates.length === 1 ? "New chapters" : `${updates.length} mangas have news`;
+    $("nwSub").textContent = `${total} new chapter${total === 1 ? "" : "s"} since your last visit`;
+    const rng = (c) => c.length === 1 ? `Ch. ${c[0]}` : `Ch. ${c[0]} – ${c[c.length - 1]}`;
+    $("nwCovers").innerHTML = updates.map((u, i) => `<div class="it" style="--i:${i}"><div class="im">${u.has_cover ? `<img src="${coverUrl(u)}" alt="">` : '<div class="ph"></div>'}<span class="n">+${u.chapters.length}</span></div><b>${esc(u.title)}</b><small>${esc(rng(u.chapters))}</small></div>`).join("");
+    $("nwCovers").scrollLeft = 0;
+    $("newDlg").dataset.now = now;
+    $("newDlg").showModal();
+  } catch (e) {} finally { checkingNew = false; }
+}
+$("nwGo").onclick = () => $("newDlg").close();
+$("newDlg").addEventListener("close", () => { const n = parseFloat($("newDlg").dataset.now); if (n) lsSet(n); });
+$("newDlg").addEventListener("click", (e) => { if (e.target === $("newDlg")) $("newDlg").close(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNew(); });
+
+$("q").addEventListener("input", renderLibrary);
+addEventListener("scroll", () => $("appHeader").classList.toggle("scrolled", scrollY > 4), { passive: true });
+
+/* ───────── manga details ───────── */
+function resetDel() { armed = false; $("delGo").classList.remove("armed"); $("delLabel").textContent = "Remove manga"; }
+function paintDetail() {
+  const m = current; if (!m) return;
+  $("dTitle").textContent = m.title;
+  $("dCoverWrap").innerHTML = m.has_cover ? `<img src="${coverUrl(m)}" alt="">` : '<div class="ph"></div>';
+  $("dBg").style.backgroundImage = m.has_cover ? `url("${coverUrl(m)}")` : "none";
+  const chips = [`<span class="chip">${m.chapters ? `${m.chapters} unread` : "Caught up"}</span>`];
+  if (m.status) chips.push(`<span class="chip${m.status === "finished" ? " ok" : ""}">${esc(m.status[0].toUpperCase() + m.status.slice(1))}</span>`);
+  if (m.paused) chips.push('<span class="chip warn">Paused</span>');
+  if (m.completed) chips.push('<span class="chip ok">Completed</span>');
+  if (m.error) chips.push('<span class="chip err">Check failed</span>');
+  $("dMeta").innerHTML = chips.join("");
+  const bits = [];
+  if (m.chapters) {
+    bits.push(m.eta_days ? `At your pace you finish the <b>${plural(m.chapters, "unread chapter")}</b> in <b>${span(m.eta_days)}</b>.` : m.read_rate > 0 ? `<b>${plural(m.chapters, "unread chapter")}</b>. New chapters come out about as fast as you read.` : `<b>${plural(m.chapters, "unread chapter")}</b>. Read a few and your pace for this manga shows up here.`);
+  } else bits.push(m.completed ? "Finished and fully read." : "You're caught up. New chapters download on their own.");
+  if (m.latest) bits.push(`Latest on the site: chapter ${m.latest}${m.total ? ` (${m.total} listed)` : ""}.`);
+  if (m.last_read) bits.push(`Last read ${ago(m.last_read)}.`);
+  if (m.checked) bits.push(`Checked ${ago(m.checked)}.`);
+  if (m.error) bits.push(`<b>${esc(m.error)}</b>`);
+  $("dPace").innerHTML = bits.join(" ");
+  $("dReadLabel").textContent = !m.chapters ? "Nothing to read" : m.started ? `Continue · Ch. ${chNum(m.started.file)}` : `Read · Ch. ${chNum(m.next)}`;
+  $("dRead").disabled = !m.chapters;
+  const tog = (id, on, onText, offText) => { $(id).classList.toggle("on", on); $(id).querySelector("span").textContent = on ? onText : offText; };
+  tog("dQueue", m.queue >= 0, `Up next · #${m.queue + 1}`, "Up next");
+  tog("dPause", m.paused, "Paused", "Pause");
+  tog("dDone", m.completed, "Completed", "Mark completed");
+  $("dRetry").hidden = !m.error;
+}
+function openDetail(url) {
+  current = mangas.find((m) => m.url === url); if (!current) return;
+  resetDel(); $("delErr").textContent = ""; $("dErr").textContent = "";
+  paintDetail();
+  $("detailDlg").showModal(); $("detailDlg").scrollTop = 0;
+}
+$("grid").addEventListener("click", (e) => { const c = e.target.closest("[data-url]"); if (c) openDetail(c.dataset.url); });
 $("detailClose").onclick = () => $("detailDlg").close();
+$("dRead").onclick = () => { $("detailDlg").close(); continueReading(current.url); };
+async function flag(btn, path, body, msg) {
+  busy(btn, true); $("dErr").textContent = "";
+  try { await api(path, { url: current.url, ...body }); lastJson = ""; await load(); paintDetail(); if (msg) toast(msg); }
+  catch (e) { $("dErr").textContent = e.message; }
+  busy(btn, false);
+}
+$("dQueue").onclick = () => flag($("dQueue"), "/api/manga/queue", { action: current.queue >= 0 ? "remove" : "add" }, current.queue >= 0 ? "Removed from Up next" : "Added to Up next");
+$("dPause").onclick = () => flag($("dPause"), "/api/manga/pause", { value: !current.paused }, current.paused ? "Tracking again" : "Paused: no more downloads for this manga");
+$("dDone").onclick = () => flag($("dDone"), "/api/manga/complete", { value: !current.completed }, current.completed ? "Back in your library" : "Marked as completed");
+$("dRetry").onclick = async () => {
+  busy($("dRetry"), true);
+  try { await api("/api/manga/retry", { url: current.url }); toast("Retrying…"); dlState.active = true; $("pill").classList.add("on"); pollStatus(); $("detailDlg").close(); }
+  catch (e) { $("dErr").textContent = e.message; }
+  busy($("dRetry"), false);
+};
 $("delGo").onclick = async () => {
   if (!armed) {
     armed = true; $("delGo").classList.add("armed"); $("delLabel").textContent = "Tap again to delete everything";
@@ -216,6 +1281,218 @@ $("delGo").onclick = async () => {
   catch (e) { $("delErr").textContent = e.message; resetDel(); }
   busy($("delGo"), false);
 };
+
+/* ───────── chapters (with selection to mark as read) ───────── */
+let selecting = false, longPressed = false;
+function setSelecting(on) {
+  selecting = on;
+  $("chList").classList.toggle("sel", on); $("selBar").hidden = !on; $("chHint").hidden = !on;
+  $("selToggle").style.color = on ? "var(--primary)" : "";
+  if (!on) document.querySelectorAll("#chList .ch.picked").forEach((r) => r.classList.remove("picked"));
+  updateSel();
+}
+function updateSel() {
+  const n = document.querySelectorAll("#chList .ch.picked").length, all = document.querySelectorAll("#chList .ch").length;
+  $("selCount").textContent = n ? `${n} selected` : "None selected";
+  $("selGo").disabled = !n; $("selAll").textContent = n && n === all ? "None" : "All";
+  $("selGo").textContent = "Mark read"; $("selGo").dataset.armed = "";
+}
+$("selToggle").onclick = () => setSelecting(!selecting);
+$("selAll").onclick = () => {
+  const rows = [...document.querySelectorAll("#chList .ch")], every = rows.every((r) => r.classList.contains("picked"));
+  rows.forEach((r) => r.classList.toggle("picked", !every)); updateSel();
+};
+$("selGo").onclick = async () => {
+  const rows = [...document.querySelectorAll("#chList .ch.picked")]; if (!rows.length) return;
+  if (!$("selGo").dataset.armed) {
+    $("selGo").dataset.armed = "1"; $("selGo").textContent = `Delete ${rows.length} · confirm`;
+    setTimeout(() => { if ($("selGo").dataset.armed) updateSel(); }, 4000);
+    return;
+  }
+  busy($("selGo"), true);
+  try {
+    const files = rows.map((r) => r.dataset.file);
+    await api("/api/chapter/read", { url: current.url, files });
+    files.forEach((f) => delete progress[f]);
+    rows.forEach((r) => r.remove());
+    toast(files.length === 1 ? "Marked as read" : `${files.length} chapters marked as read`);
+    setSelecting(false);
+    if (!$("chList").querySelector(".ch")) $("chList").innerHTML = '<div class="none">No chapters in the folder.</div>';
+    lastJson = ""; load(); loadStats();
+  } catch (e) { toast(e.message); }
+  busy($("selGo"), false);
+};
+$("chaptersBtn").onclick = async () => {
+  $("chTitle").textContent = current.title;
+  $("chList").innerHTML = '<div class="none">Loading…</div>';
+  setSelecting(false);
+  $("detailDlg").close(); $("chaptersDlg").showModal();
+  try {
+    const [{ chapters }, prog] = await Promise.all([
+      api(`/api/chapters?url=${encodeURIComponent(current.url)}`),
+      api(`/api/progress?url=${encodeURIComponent(current.url)}`).catch(() => ({ progress: {} })),
+    ]);
+    progress = prog.progress;
+    const CK = '<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+    $("chList").innerHTML = chapters.length
+      ? chapters.map((c) => `<div class="ch" data-file="${esc(c.file)}" data-name="${esc(shortName(c.name))}"><i class="dot"></i><span class="box">${CK}</span><div class="t"><b>${esc(shortName(c.name))}</b><small><span class="prog"></span><span>${(c.size / 1048576).toFixed(1)} MB</span></small></div>${CHEV}</div>`).join("")
+      : '<div class="none">No chapters in the folder.</div>';
+    paintProgress();
+    const leftover = [...document.querySelectorAll("#chList .ch.done")].map((x) => x.dataset.file);
+    if (leftover.length) deleteRead(current.url, leftover);
+  } catch (e) { $("chList").innerHTML = `<div class="none">${esc(e.message)}</div>`; }
+};
+/* long-press a chapter: pick everything up to it (for "I read up to here") */
+let pressTimer = null;
+$("chList").addEventListener("pointerdown", (e) => {
+  const row = e.target.closest(".ch"); if (!row) return;
+  longPressed = false;
+  pressTimer = setTimeout(() => {
+    longPressed = true;
+    if (!selecting) setSelecting(true);
+    const rows = [...document.querySelectorAll("#chList .ch")], at = rows.indexOf(row);
+    rows.forEach((r, i) => r.classList.toggle("picked", i <= at)); updateSel();
+    if (navigator.vibrate) navigator.vibrate(12);
+  }, 450);
+});
+["pointerup", "pointerleave", "pointercancel", "scroll"].forEach((ev) => $("chList").addEventListener(ev, () => clearTimeout(pressTimer), true));
+$("chList").addEventListener("contextmenu", (e) => { if (e.target.closest(".ch")) e.preventDefault(); });
+
+/* reading progress (kept on the server, so it follows you between home Wi-Fi and the internet) */
+let progress = {};
+const getProg = (url, file) => progress[file] || null;
+const setProg = (url, file, v) => { progress[file] = v; api("/api/progress", { url, file, ...v }).catch(() => {}); };
+function progLabel(p) { return !p ? "" : p.page >= p.total - 1 ? "Read" : `p. ${p.page + 1}/${p.total}`; }
+function paintProgress() {
+  if (!current) return;
+  document.querySelectorAll("#chList .ch").forEach((row) => {
+    const p = getProg(current.url, row.dataset.file);
+    row.classList.toggle("done", !!p && p.page >= p.total - 1);
+    row.classList.toggle("started", !!p && p.page < p.total - 1);
+    row.querySelector(".prog").textContent = progLabel(p);
+  });
+}
+let onScroll = null, reading = null;
+const imgSrc = (url, file, i) => `/page?url=${encodeURIComponent(url)}&file=${encodeURIComponent(file)}&i=${i}`;
+
+/* Chapters are appended one after another, so reading flows on without going back to the list. */
+async function addChapter(idx, start) {
+  const r = reading; if (!r || r.chs[idx] || r.loading) return null;
+  r.loading = true;
+  const c = r.order[idx];
+  try {
+    const { pages } = await api(`/api/pages?url=${encodeURIComponent(r.url)}&file=${encodeURIComponent(c.file)}`);
+    if (reading !== r) return null;
+    const html = (idx > r.first ? `<div class="sep"><span>Next</span><b>${esc(c.name)}</b></div>` : "")
+      + Array.from({ length: pages }, (_, i) =>
+        `<img data-c="${idx}" data-i="${i}" ${i <= start ? "" : 'loading="lazy"'} alt="Page ${i + 1}" src="${imgSrc(r.url, c.file, i)}">`).join("")
+      + (idx === r.order.length - 1 ? '<div class="msg end">That was the last downloaded chapter.</div>' : "");
+    const before = $("pages").querySelectorAll("img").length;
+    $("pages").insertAdjacentHTML("beforeend", html);
+    const imgs = [...$("pages").querySelectorAll("img")].slice(before);
+    r.chs[idx] = { file: c.file, name: c.name, total: pages, imgs, best: start };
+    r.all.push(...imgs);
+    return r.chs[idx];
+  } catch (e) { return null; }
+  finally { r.loading = false; }
+}
+
+$("chList").addEventListener("click", (e) => {
+  const row = e.target.closest(".ch"); if (!row) return;
+  if (longPressed) { longPressed = false; return; }
+  if (selecting) { row.classList.toggle("picked"); updateSel(); return; }
+  const order = [...document.querySelectorAll("#chList .ch")].map((x) => ({ file: x.dataset.file, name: x.dataset.name }));
+  startReading(current.url, order, order.findIndex((x) => x.file === row.dataset.file));
+});
+
+/* straight from the Now tab: open the chapter you left off in (or the first unread one) */
+async function continueReading(url, file) {
+  const m = mangas.find((x) => x.url === url); if (!m) return;
+  current = m;
+  try {
+    const [{ chapters }, prog] = await Promise.all([
+      api(`/api/chapters?url=${encodeURIComponent(url)}`),
+      api(`/api/progress?url=${encodeURIComponent(url)}`).catch(() => ({ progress: {} })),
+    ]);
+    progress = prog.progress;
+    if (!chapters.length) return toast("Nothing to read here");
+    const order = chapters.map((c) => ({ file: c.file, name: shortName(c.name) }));
+    const want = file || (m.started && m.started.file);
+    const at = order.findIndex((o) => o.file === want);
+    startReading(url, order, at < 0 ? 0 : at);
+  } catch (e) { toast(e.message); }
+}
+
+async function startReading(url, order, first) {
+  $("rTitle").textContent = order[first].name; $("rCount").textContent = "";
+  $("pages").innerHTML = '<div class="msg">Loading…</div>';
+  $("reader").classList.remove("immersive"); $("rProg").style.width = "0";
+  $("reader").showModal(); $("reader").scrollTop = 0;
+  const r = reading = { url, order, first, chs: [], all: [], done: new Set(), loading: false };
+  $("pages").innerHTML = "";
+  const saved = getProg(url, order[first].file);
+  // pages up to the resume point load eagerly so scrolling there is not thrown off by lazy placeholders
+  const start = saved && saved.page < saved.total - 1 ? saved.page : 0;
+  const c = await addChapter(first, start);
+  if (!c) { if (reading === r) $("pages").innerHTML = '<div class="msg">Could not open this chapter.</div>'; return; }
+  if (!c.total) { $("pages").innerHTML = '<div class="msg">This chapter has no pages.</div>'; return; }
+  $("rCount").textContent = `${start + 1}/${c.total}`;
+  if (start > 0) {
+    await Promise.all(c.imgs.slice(0, start + 1).map((im) => im.complete ? 0 : new Promise((ok) => { im.onload = im.onerror = ok; })));
+    c.imgs[start].scrollIntoView();
+  }
+  let tick = false;
+  onScroll = () => {
+    if (tick) return; tick = true;
+    requestAnimationFrame(() => {
+      tick = false;
+      if (reading !== r) return;
+      const mid = innerHeight / 2;
+      const im = r.all.find((x) => { const b = x.getBoundingClientRect(); return b.top <= mid && b.bottom > mid; });
+      if (!im) return;
+      const idx = +im.dataset.c, i = +im.dataset.i, ch = r.chs[idx];
+      $("rTitle").textContent = ch.name;
+      $("rCount").textContent = `${i + 1}/${ch.total}`;
+      $("rProg").style.width = `${((i + 1) / ch.total) * 100}%`;
+      if (i !== ch.best) { ch.best = i; setProg(url, ch.file, { page: i, total: ch.total }); }
+      if (i >= ch.total - 3 && !r.chs[idx + 1] && idx + 1 < r.order.length) addChapter(idx + 1, 0);
+      if (i === ch.total - 1) { r.done.add(ch.file); ch.imgs.forEach((x) => { x.loading = "eager"; }); }
+    });
+  };
+  $("reader").addEventListener("scroll", onScroll, { passive: true });
+  onScroll(); // also covers chapters short enough to need no scrolling
+}
+$("pages").addEventListener("click", () => $("reader").classList.toggle("immersive")); // tap to hide/show the bar
+$("readerClose").onclick = () => { $("reader").close(); finishReading(); };
+
+async function deleteRead(url, files) {
+  let n = 0;
+  for (const file of files) {
+    try {
+      await api("/api/chapter/read", { url, file });
+      delete progress[file]; n++;
+      document.querySelectorAll("#chList .ch").forEach((row) => { if (row.dataset.file === file) row.remove(); });
+    } catch (e) { toast(e.message); }
+  }
+  if (n && !$("chList").querySelector(".ch")) $("chList").innerHTML = '<div class="none">No chapters in the folder.</div>';
+  if (n) { lastJson = ""; await load(); }
+  return n;
+}
+async function finishReading() {
+  if (onScroll) { $("reader").removeEventListener("scroll", onScroll); onScroll = null; }
+  const r = reading; reading = null;
+  if (r && r.done.size) {
+    // fully read chapters are deleted on the server and dropped from the list
+    const n = await deleteRead(r.url, [...r.done]);
+    if (n) toast(n === 1 ? "Chapter read and deleted" : `${n} chapters read and deleted`);
+  }
+  paintProgress();
+}
+$("reader").addEventListener("close", finishReading); // also covers Esc / back gesture
+$("chaptersClose").onclick = () => {
+  current = mangas.find((m) => m.url === current.url) || current;
+  setSelecting(false); paintDetail();
+  $("chaptersDlg").close(); $("detailDlg").showModal(); };
 
 /* add */
 const HINTS = { all: "Downloads everything available.", from: "Skips chapters before this number.", new: "Ignores what already exists, downloads only future chapters." };
@@ -245,13 +1522,19 @@ $("addGo").onclick = async () => {
       $("stepSearch").hidden = true; $("stepConfirm").hidden = false; $("addGoLabel").textContent = "Add to library"; step = "confirm";
     } else {
       await api("/api/add", { url, mode, from: $("fromNum").value });
-      $("addDlg").close(); toast(mode === "new" ? "Added to library" : "Added, downloading…"); lastJson = ""; load();
+      $("addDlg").close(); toast(mode === "new" ? "Added to library" : "Added · downloading in the background"); lastJson = ""; load();
     }
   } catch (e) { $("addErr").textContent = e.message; }
   busy($("addGo"), false);
 };
 
-load(true); setInterval(load, 8000);
+applyTheme();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+const params = new URLSearchParams(location.search);
+setView(TITLES[params.get("tab")] ? params.get("tab") : "now");
+if (params.get("add")) $("fab").click();
+history.replaceState(null, "", "/");
+load(true).then(checkNew); setInterval(load, 8000);
 </script>
 </body>
 </html>

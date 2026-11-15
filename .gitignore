@@ -9,3 +9,10 @@ android/app/build/
 android/.gradle/
 android/local.properties
 android/build.log
+.webapp_token
+reading_progress.json
+.download_status.json
+new_chapters.json
+.state.lock
+library_meta.json
+read_log.json

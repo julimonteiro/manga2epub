@@ -52,6 +52,8 @@ NEW_FOLDER_PREFIX = "[NEW] - "
 MIHON_DIR = os.path.join("mihon", "local")  # synced to the phone's Mihon/local folder
 MIHON_BACKUP_DIR = os.path.join("mihon", "backup")  # Mihon auto-backups, synced from the phone
 RUN_LOCK_FILE = ".run.lock"  # held while a download runs, so jobs and the web app never overlap
+STATUS_FILE = ".download_status.json"  # live progress of the running download, read by the web app
+NEW_LOG_FILE = "new_chapters.json"  # one entry per downloaded chapter, used for the "what's new" popup
 DELETE_READ_CBZ = False  # also delete the phone's CBZ of read chapters (EPUBs are always deleted)
 
 # ── Parallelism and rate limiting control ──
@@ -145,6 +147,7 @@ class DownloadTracker:
         self._lock = threading.Lock()
         self._mangas: dict[str, dict] = {}
         self._order: list[str] = []
+        self._last_dump = 0.0
 
     def add_manga(self, url: str, title: str, status: str = "checking"):
         """Register a manga in the tracker."""
@@ -160,18 +163,37 @@ class DownloadTracker:
             }
             if url not in self._order:
                 self._order.append(url)
+            self._dump(force=True)
+
+    def _dump(self, force: bool = False):
+        """Write a snapshot for the web app (throttled; call with the lock held)."""
+        now = time.time()
+        if not force and now - self._last_dump < 0.5:
+            return
+        self._last_dump = now
+        snapshot = {"updated": now, "mangas": [{"url": u, **self._mangas[u]} for u in self._order]}
+        try:
+            tmp = STATUS_FILE + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(snapshot, f, ensure_ascii=False)
+            os.replace(tmp, STATUS_FILE)
+        except OSError:
+            pass
 
     def update(self, url: str, **kwargs):
         """Update fields for a manga (e.g. status, done_ch, current_ch, ...)."""
         with self._lock:
             if url in self._mangas:
+                changed = "status" in kwargs and kwargs["status"] != self._mangas[url]["status"]
                 self._mangas[url].update(kwargs)
+                self._dump(force=changed)
 
     def increment(self, url: str, field: str, amount: int = 1):
         """Thread-safe increment of a numeric field."""
         with self._lock:
             if url in self._mangas:
                 self._mangas[url][field] += amount
+                self._dump(force=True)
 
     def get_totals(self) -> tuple[int, int]:
         """Return (total_done_chapters, total_chapters) across all mangas."""
@@ -328,6 +350,78 @@ def load_state() -> dict:
         with open(STATE_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
+
+
+def log_new_chapter(manga_url: str, title: str, chapter_num: str):
+    """Remember that a chapter was just downloaded (feeds the web app's 'what's new' popup)."""
+    with state_lock:
+        try:
+            with open(NEW_LOG_FILE, "r", encoding="utf-8") as f:
+                log = json.load(f)
+        except (OSError, ValueError):
+            log = []
+        log.append({"ts": time.time(), "url": manga_url, "title": title, "chapter": chapter_num})
+        tmp = NEW_LOG_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(log[-1000:], f, ensure_ascii=False)
+        os.replace(tmp, NEW_LOG_FILE)
+
+
+META_FILE = "library_meta.json"  # per-manga info from the source + user flags (paused, completed, queue)
+READ_LOG_FILE = "read_log.json"  # one entry per chapter read, feeds the stats and the reading pace
+STATE_LOCK_FILE = ".state.lock"
+
+
+def load_meta() -> dict:
+    """{"mangas": {url: {...}}, "queue": [url, ...], "run": {...}}"""
+    try:
+        with open(META_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        data = {}
+    data.setdefault("mangas", {})
+    data.setdefault("queue", [])
+    return data
+
+
+def modify_meta(fn):
+    """Read-modify-write library_meta.json under the same cross-process lock as the download history."""
+    with state_lock, open(STATE_LOCK_FILE, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        meta = load_meta()
+        result = fn(meta)
+        with open(META_FILE + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(meta, f, ensure_ascii=False)
+        os.replace(META_FILE + ".tmp", META_FILE)
+        return result
+
+
+def log_read_chapter(manga_url: str, title: str, chapter: str):
+    """Remember that a chapter was read (when it happened is what the stats are built from)."""
+    with state_lock:
+        try:
+            with open(READ_LOG_FILE, "r", encoding="utf-8") as f:
+                log = json.load(f)
+        except (OSError, ValueError):
+            log = []
+        log.append({"ts": time.time(), "url": manga_url, "title": title, "chapter": chapter})
+        tmp = READ_LOG_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(log[-20000:], f, ensure_ascii=False)
+        os.replace(tmp, READ_LOG_FILE)
+
+
+def modify_state(fn):
+    """Read-modify-write the download history under a cross-process lock, so the web app can add or
+    remove mangas while a download is running without either side overwriting the other."""
+    with state_lock, open(STATE_LOCK_FILE, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state = load_state()
+        result = fn(state)
+        with open(STATE_FILE + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+        os.replace(STATE_FILE + ".tmp", STATE_FILE)
+        return result
 
 
 def save_state(state: dict):
@@ -523,6 +617,9 @@ def fetch_page(url: str) -> BeautifulSoup | None:
     return None
 
 
+LAST_DETAILS: dict[str, dict] = {}  # status/genres of the manga page read last by get_manga_info
+
+
 def get_manga_info(manga_url: str) -> tuple[str, list[dict], str | None] | None:
     """
     Access the manga page and extract the title, chapter list, and cover image URL.
@@ -601,6 +698,12 @@ def get_manga_info(manga_url: str) -> tuple[str, list[dict], str | None] | None:
             return 0
 
     unique_chapters.sort(key=sort_key)
+
+    # Publication status and genres ("Status publishing ... Genres Action Adventure"), kept for the web app
+    page_text = soup.get_text(" ", strip=True)
+    status_m = re.search(r"\bStatus\s+(publishing|finished|on hiatus|discontinued|not yet published)\b", page_text, re.IGNORECASE)
+    genres = [a.get_text(strip=True) for a in soup.find_all("a", href=re.compile(r"[?&]genre=")) if a.get_text(strip=True)]
+    LAST_DETAILS[manga_url] = {"status": status_m.group(1).lower() if status_m else "", "genres": genres[:8]}
 
     return manga_title, unique_chapters, cover_url
 
@@ -1064,6 +1167,7 @@ def delete_read_chapters(dry_run: bool = False) -> int:
         return 0
 
     cleaned = 0
+    by_folder = {sanitize_filename(v.get("title", "")): (u, v.get("title", "")) for u, v in load_state().items()}
     for chapter_url in sorted(read):
         manga_name, _, filename = chapter_url.partition("/")
         stem = Path(filename).stem
@@ -1083,6 +1187,8 @@ def delete_read_chapters(dry_run: bool = False) -> int:
                 path.unlink()
         if targets:
             cleaned += 1
+            if not dry_run and manga_name in by_folder:
+                log_read_chapter(by_folder[manga_name][0], by_folder[manga_name][1], stem)
     return cleaned
 
 
@@ -1179,6 +1285,38 @@ def download_chapter(
     return success
 
 
+def record_check(manga_url: str, title=None, total=None, latest=None, details=None, error="__keep__", new_chapters=0):
+    """Store what the last check of a manga found (source info, errors) in library_meta.json."""
+    def apply(meta):
+        m = meta["mangas"].setdefault(manga_url, {})
+        m["checked"] = time.time()
+        if title:
+            m["title"] = title
+        if total is not None:
+            m["total"] = total
+        if latest is not None:
+            m["latest"] = latest
+        if details:
+            if details.get("status"):
+                m["status"] = details["status"]
+            if details.get("genres"):
+                m["genres"] = details["genres"]
+        if error != "__keep__":
+            if error:
+                m["error"] = error
+                m["fails"] = m.get("fails", 0) + 1
+                m["error_ts"] = time.time()
+            else:
+                m.pop("error", None)
+                m["fails"] = 0
+        if new_chapters:
+            m["new_ts"] = time.time()
+    try:
+        modify_meta(apply)
+    except OSError:
+        pass
+
+
 def process_manga(
     manga_url: str,
     state: dict,
@@ -1196,11 +1334,17 @@ def process_manga(
 
     result = get_manga_info(manga_url)
     if not result:
+        record_check(manga_url, error="Could not reach the source")
         if tracker:
             tracker.update(manga_url, status="error")
         return
 
     manga_title, chapters, cover_url = result
+    numbers = [parse_chapter_num(c["number"]) for c in chapters]
+    record_check(
+        manga_url, title=manga_title, total=len(chapters), latest=max(numbers) if numbers else None,
+        details=LAST_DETAILS.get(manga_url), error=None if chapters else "The source lists no chapters",
+    )
 
     if tracker:
         tracker.update(manga_url, title=manga_title)
@@ -1237,6 +1381,7 @@ def process_manga(
 
     # ── Parallel chapter download ──
     success_count = 0
+    failed_count = 0
 
     def _download_and_track(chapter):
         _resume_event.wait()
@@ -1257,12 +1402,16 @@ def process_manga(
             if _cancel_event.is_set():
                 break
             chapter, success = future.result()
+            if not success and not _cancel_event.is_set():
+                failed_count += 1
             if success:
                 with state_lock:
                     if manga_key not in state:
                         state[manga_key] = {"title": manga_title, "chapters": []}
                     state[manga_key]["chapters"].append(chapter["url"])
-                    save_state(state)
+                    entry = state[manga_key]
+                    modify_state(lambda st: st.__setitem__(manga_key, entry))  # only this manga's entry
+                log_new_chapter(manga_url, manga_title, chapter["number"])
                 success_count += 1
                 if tracker:
                     tracker.increment(manga_url, "done_ch")
@@ -1270,6 +1419,11 @@ def process_manga(
     except KeyboardInterrupt:
         _cancel_event.set()
         _resume_event.set()
+
+    if failed_count:
+        record_check(manga_url, error=f"{failed_count} chapter{'s' if failed_count != 1 else ''} failed to download")
+    elif success_count:
+        record_check(manga_url, error=None, new_chapters=success_count)
 
     # Update tracker final status
     if tracker:
@@ -1340,6 +1494,14 @@ def run_download(urls: list[str], download_all: bool = False, start_from: float 
     _resume_event.set()
     state = load_state()
 
+    # Paused mangas are left alone, finished ones stay closed, and the "up next" queue goes first.
+    meta = load_meta()
+    flags = meta["mangas"]
+    urls = [u for u in urls if not flags.get(u, {}).get("paused") and not flags.get(u, {}).get("completed")]
+    rank = {u: i for i, u in enumerate(meta["queue"])}
+    urls.sort(key=lambda u: rank.get(u, len(rank)))
+    run_started = time.time()
+
     if download_all:
         for url in urls:
             if url in state:
@@ -1404,6 +1566,24 @@ def run_download(urls: list[str], download_all: bool = False, start_from: float 
         _resume_event.set()
 
     exported = export_to_mihon()
+    try:
+        os.remove(STATUS_FILE)
+    except OSError:
+        pass
+    try:
+        def finish(meta):
+            errs = sum(1 for u in urls if meta["mangas"].get(u, {}).get("error"))
+            meta["run"] = {"ts": time.time(), "started": run_started, "mangas": len(urls), "errors": errs, "cancelled": _cancel_event.is_set()}
+            # a finished series with everything downloaded needs no more checks
+            for u in urls:
+                m = meta["mangas"].get(u, {})
+                if m.get("status") == "finished" and not m.get("error") and "checked" in m and m.get("checked", 0) >= run_started:
+                    have = len(load_state().get(u, {}).get("chapters", []))
+                    if m.get("total") and have >= m["total"]:
+                        m["completed"] = True
+        modify_meta(finish)
+    except OSError:
+        pass
 
     clear_screen()
     console.print()
